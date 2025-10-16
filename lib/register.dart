@@ -801,7 +801,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     value: _ageRangeController.text.isEmpty
                         ? null
                         : _ageRangeController.text,
-                    label: 'Age Range',
+                    label: 'Preferred Age Range',
                     icon: Icons.cake_rounded,
                     items: const [
                       DropdownMenuItem(value: '<20', child: Text('<20')),

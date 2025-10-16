@@ -71,28 +71,46 @@ class MenuDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
               child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                    ),
-                    child: CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, size: 40, color: Colors.blue[700]),
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Logo on the left
+                      Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                            ),
+                            child: CircleAvatar(
+                              radius: 48,
+                              backgroundColor: Colors.white,
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/room.png',
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Roommate',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 15),
-                  const Text(
-                    'Menu',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1,
-                    ),
-                  ),
                 ],
               ),
             ),

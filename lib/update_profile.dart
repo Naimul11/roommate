@@ -26,7 +26,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   // Profile image
   File? _profileImage;
   String? _currentProfileImageUrl;
-  bool _isPickingImage = false;
+  final bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -120,7 +120,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Profile image selected! It will be uploaded when you update profile.'),
+                  Text('Profile image selected!'),
                 ],
               ),
               backgroundColor: Colors.green,
@@ -213,7 +213,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                     children: [
                       Icon(Icons.warning, color: Colors.white),
                       SizedBox(width: 8),
-                      Expanded(child: Text('Profile image upload failed, but other updates will continue.')),
+                      Expanded(child: Text('Profile image upload failed')),
                     ],
                   ),
                   backgroundColor: Colors.orange,
@@ -393,7 +393,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                           value: _ageRangeController.text.isEmpty
                               ? null
                               : _ageRangeController.text,
-                          label: 'Age Range',
+                          label: 'Preferred Age Range',
                           icon: Icons.cake_rounded,
                           items: const [
                             DropdownMenuItem(value: '<20', child: Text('<20')),
@@ -580,7 +580,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     required String? Function(String?)? validator,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
