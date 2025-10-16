@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:roommate/login.dart';
+import 'package:roommate/profile.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -16,8 +17,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Roommate',
-      home: LoginPage(),
       debugShowCheckedModeBanner: false,
+      initialRoute: '/profile',
+      routes: {
+        '/login': (context) => LoginPage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }
