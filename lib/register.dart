@@ -5,6 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:roommate/login.dart';
+import 'package:roommate/nidscrape.dart';
+import 'package:roommate/services/imagekit_service.dart';
+import 'dart:io';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -33,6 +36,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _ageRangeController = TextEditingController();
   final TextEditingController _bloodGroupController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
+
+  // Profile image
+  File? _profileImage;
+  bool _isPickingImage = false;
 
   @override
   void dispose() {
@@ -82,8 +89,8 @@ class _RegisterPageState extends State<RegisterPage> {
         // Extract NID information
         String extractedText = recognizedText.text;
 
-        // Parse NID data
-        Map<String, String> nidData = _parseNIDData(extractedText);
+        // Parse NID data using NIDScraper
+        Map<String, String> nidData = NIDScraper.parseNIDData(extractedText);
 
         setState(() {
           _nidNameController.text = nidData['name'] ?? '';
@@ -128,118 +135,84 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  Map<String, String> _parseNIDData(String text) {
-    Map<String, String> data = {'name': '', 'dob': '', 'nidNumber': ''};
+  Future<void> _pickProfileImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
 
-    // Split text into lines
-    List<String> lines = text.split('\n');
-
-    // Common patterns for Bangladesh NID
-    RegExp nidNumberPattern = RegExp(r'\b\d{10,17}\b');
-    RegExp datePattern = RegExp(
-      r'\b\d{1,2}\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*\d{2,4}\b',
-      caseSensitive: false,
-    );
-    RegExp numericDatePattern = RegExp(
-      r'\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b',
-    );
-
-    // Process each line
-    for (String line in lines) {
-      String cleanLine = line.trim();
-      String lowerLine = cleanLine.toLowerCase();
-
-      // Extract Name (look for "Name:" or "name:" label)
-      if ((lowerLine.contains('name') || lowerLine.contains('নাম')) &&
-          cleanLine.contains(':')) {
-        List<String> parts = cleanLine.split(':');
-        if (parts.length > 1) {
-          String namePart = parts[1].trim();
-          // Remove Bengali characters and extract English name
-          String englishName = namePart
-              .replaceAll(RegExp(r'[\u0980-\u09FF]'), '')
-              .trim();
-          if (englishName.isNotEmpty && data['name']!.isEmpty) {
-            data['name'] = englishName;
+      if (image != null) {
+        final File imageFile = File(image.path);
+        
+        // Check file size (max 2MB)
+        final fileSize = await imageFile.length();
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        
+        if (fileSize > maxSize) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Image size must be less than 2MB. Current size: ${ImageKitService.formatFileSize(fileSize)}',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
+          return;
+        }
+
+        setState(() {
+          _profileImage = imageFile;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Profile image selected.'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
-
-      // Extract Date of Birth (look for "Date of Birth:" label or date patterns)
-      if ((lowerLine.contains('date of birth') ||
-              lowerLine.contains('dob') ||
-              lowerLine.contains('জন্ম')) &&
-          cleanLine.contains(':')) {
-        List<String> parts = cleanLine.split(':');
-        if (parts.length > 1) {
-          String datePart = parts[1].trim();
-          // Try to match date patterns
-          var monthDateMatch = datePattern.firstMatch(datePart);
-          var numericDateMatch = numericDatePattern.firstMatch(datePart);
-
-          if (monthDateMatch != null && data['dob']!.isEmpty) {
-            data['dob'] = monthDateMatch.group(0)!;
-          } else if (numericDateMatch != null && data['dob']!.isEmpty) {
-            data['dob'] = numericDateMatch.group(0)!;
-          }
-        }
-      }
-
-      // Extract ID Number (look for "ID NO:" or "NID NO:" label)
-      if ((lowerLine.contains('id no') ||
-              lowerLine.contains('nid') ||
-              lowerLine.contains('আইডি')) &&
-          cleanLine.contains(':')) {
-        List<String> parts = cleanLine.split(':');
-        if (parts.length > 1) {
-          String idPart = parts[1].trim();
-          var nidMatch = nidNumberPattern.firstMatch(idPart);
-          if (nidMatch != null && data['nidNumber']!.isEmpty) {
-            String potentialNID = nidMatch.group(0)!;
-            // Bangladesh NID is typically 10, 13, or 17 digits
-            if (potentialNID.length == 10 ||
-                potentialNID.length == 13 ||
-                potentialNID.length == 17) {
-              data['nidNumber'] = potentialNID;
-            }
-          }
-        }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text('Error: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
-
-    // Fallback: Extract NID number if not found with label
-    if (data['nidNumber']!.isEmpty) {
-      for (String line in lines) {
-        var nidMatch = nidNumberPattern.firstMatch(line);
-        if (nidMatch != null) {
-          String potentialNID = nidMatch.group(0)!;
-          if (potentialNID.length == 10 ||
-              potentialNID.length == 13 ||
-              potentialNID.length == 17) {
-            data['nidNumber'] = potentialNID;
-            break;
-          }
-        }
-      }
-    }
-
-    // Fallback: Extract date if not found with label
-    if (data['dob']!.isEmpty) {
-      for (String line in lines) {
-        var monthDateMatch = datePattern.firstMatch(line);
-        var numericDateMatch = numericDatePattern.firstMatch(line);
-
-        if (monthDateMatch != null) {
-          data['dob'] = monthDateMatch.group(0)!;
-          break;
-        } else if (numericDateMatch != null) {
-          data['dob'] = numericDateMatch.group(0)!;
-          break;
-        }
-      }
-    }
-
-    return data;
   }
 
   Future<void> _register() async {
@@ -356,6 +329,59 @@ class _RegisterPageState extends State<RegisterPage> {
           return;
         }
 
+        // Upload profile image to ImageKit if selected
+        String? profileImageUrl;
+        if (_profileImage != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Text('Uploading profile image...'),
+                  ],
+                ),
+                duration: Duration(seconds: 30),
+              ),
+            );
+          }
+
+          final fileName = 'profile_${userCredential.user!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          profileImageUrl = await ImageKitService.uploadImage(
+            imageFile: _profileImage!,
+            fileName: fileName,
+            folder: 'roommate/profiles',
+          );
+
+          if (profileImageUrl == null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.warning, color: Colors.white),
+                      SizedBox(width: 8),
+                      Expanded(child: Text('Profile image upload failed, but registration will continue.')),
+                    ],
+                  ),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
+        }
+
         // Prepare user data for Firestore
         final userData = {
           'email': userCredential.user!.email,
@@ -375,6 +401,7 @@ class _RegisterPageState extends State<RegisterPage> {
           'bloodGroup': _bloodGroupController.text,
           'bio': _bioController.text,
           'religion': _religionController.text,
+          'profileImageUrl': profileImageUrl,
           'createdAt': FieldValue.serverTimestamp(),
         };
 
@@ -462,9 +489,10 @@ class _RegisterPageState extends State<RegisterPage> {
           'Create Account',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.transparent,
+        centerTitle: true,
+        backgroundColor: const Color.fromARGB(255, 0, 107, 194),
         elevation: 0,
-        foregroundColor: onSurface,
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -570,6 +598,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 title: 'Personal Information',
                 icon: Icons.person_rounded,
                 children: [
+                  const SizedBox(height: 16),
+                  
+                  // Profile Image Upload Card
+                  _buildProfileImageUploadCard(),
+                  
                   const SizedBox(height: 16),
                   _buildModernTextField(
                     controller: _mobileController,
@@ -1080,6 +1113,125 @@ class _RegisterPageState extends State<RegisterPage> {
             value: value,
             onChanged: onChanged,
             activeThumbColor: Theme.of(context).colorScheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileImageUploadCard() {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryColor.withValues(alpha: .1),
+            primaryColor.withValues(alpha: .05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: .3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          if (_profileImage != null) ...[
+            // Display uploaded image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                _profileImage!,
+                height: 150,
+                width: 150,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.green, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Ready to upload',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Icon(
+              Icons.person_outline_rounded,
+              size: 48,
+              color: primaryColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Upload Profile Picture',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: onSurface.withValues(alpha: .8),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Max size: 2MB • JPG, PNG',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: onSurface.withValues(alpha: .6),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _isNidScanned && !_isPickingImage
+                ? _pickProfileImage
+                : null,
+            icon: _isPickingImage
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Icon(_profileImage != null ? Icons.refresh : Icons.upload_rounded),
+            label: Text(_isPickingImage
+                ? 'Processing...'
+                : _profileImage != null
+                    ? 'Change Image'
+                    : 'Choose Image'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ],
       ),
