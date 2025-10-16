@@ -55,7 +55,7 @@ class MenuDrawer extends StatelessWidget {
     final isProfilePage = _isProfilePage(context);
     
     return Drawer(
-      width: 240,
+      width: 250,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -100,54 +100,55 @@ class MenuDrawer extends StatelessWidget {
             // Menu Items
             Expanded(
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(15),
-                    topRight: Radius.circular(15),
-                  ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  
                 ),
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
                   children: [
-                    if (!isProfilePage)
-                      _buildModernMenuItem(
-                        context,
-                        icon: Icons.person_outline,
-                        title: 'Profile',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ProfilePage()),
-                          );
-                        },
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        children: [
+                          if (!isProfilePage)
+                            _buildModernMenuItem(
+                              context,
+                              icon: Icons.person_outline,
+                              title: 'Profile',
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                                );
+                              },
+                            ),
+                          if (isProfilePage)
+                            _buildModernMenuItem(
+                              context,
+                              icon: Icons.edit_outlined,
+                              title: 'Update Profile',
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
+                                );
+                              },
+                            ),
+                        ],
                       ),
-                    if (isProfilePage)
-                      _buildModernMenuItem(
-                        context,
-                        icon: Icons.edit_outlined,
-                        title: 'Update Profile',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
-                          );
-                        },
-                      ),
-                    const SizedBox(height: 20),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Divider(color: Colors.grey[300], thickness: 1),
+                      child: Divider(color: Colors.grey[700], thickness: 1),
                     ),
-                    const SizedBox(height: 10),
                     _buildModernMenuItem(
                       context,
                       icon: Icons.logout,
                       title: 'Logout',
-                      textColor: Colors.red[700]!,
-                      iconColor: Colors.red[700]!,
+                      textColor: Colors.red[400]!,
+                      iconColor: Colors.red[400]!,
                       onTap: () async {
                         await FirebaseAuth.instance.signOut();
                         if (context.mounted) {
@@ -155,6 +156,7 @@ class MenuDrawer extends StatelessWidget {
                         }
                       },
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -189,14 +191,14 @@ class MenuDrawer extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  color: iconColor ?? Colors.blue[700],
+                  color: iconColor ?? Colors.white,
                   size: 24,
                 ),
                 const SizedBox(width: 16),
                 Text(
                   title,
                   style: TextStyle(
-                    color: textColor ?? Colors.grey[800],
+                    color: textColor ?? Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),

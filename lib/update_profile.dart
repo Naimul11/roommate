@@ -332,7 +332,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+  color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -414,7 +414,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           ),
         ),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
+  fillColor: Colors.white,
       ),
       keyboardType: keyboardType,
       maxLines: maxLines,
@@ -455,7 +455,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           ),
         ),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
+  fillColor: Colors.white,
       ),
       items: items,
       onChanged: onChanged,
