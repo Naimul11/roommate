@@ -18,6 +18,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Roommate',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
       initialRoute: '/profile',
       routes: {
         '/login': (context) => LoginPage(),
