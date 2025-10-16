@@ -39,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Profile image
   File? _profileImage;
-  bool _isPickingImage = false;
+  final bool _isPickingImage = false;
 
   @override
   void dispose() {
@@ -355,7 +355,7 @@ class _RegisterPageState extends State<RegisterPage> {
             );
           }
 
-          final fileName = 'profile_${userCredential.user!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final fileName = 'roommate_profile_${userCredential.user!.uid}.jpg';
           profileImageUrl = await ImageKitService.uploadImage(
             imageFile: _profileImage!,
             fileName: fileName,
@@ -788,6 +788,13 @@ class _RegisterPageState extends State<RegisterPage> {
                       }
                       return null;
                     },
+                    onTap: () {
+                      if (_whatsappController.text.isEmpty && _mobileController.text.isNotEmpty) {
+                        setState(() {
+                          _whatsappController.text = _mobileController.text;
+                        });
+                      }
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildModernDropdown(
@@ -1008,9 +1015,11 @@ class _RegisterPageState extends State<RegisterPage> {
     TextInputType? keyboardType,
     int maxLines = 1,
     String? Function(String?)? validator,
+    VoidCallback? onTap,
   }) {
     return TextFormField(
       controller: controller,
+      onTap: onTap,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),

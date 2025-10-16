@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:roommate/profile.dart';
 import 'package:roommate/menubar.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:roommate/services/imagekit_service.dart';
+import 'dart:io';
 
 class UpdateProfilePage extends StatefulWidget {
   const UpdateProfilePage({super.key});
@@ -19,6 +22,11 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   final TextEditingController _occupationController = TextEditingController();
   String _roommateType = '';
   bool _isLoading = true;
+  
+  // Profile image
+  File? _profileImage;
+  String? _currentProfileImageUrl;
+  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -44,6 +52,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           _whatsappController.text = data['whatsappNumber'] ?? '';
           _occupationController.text = data['occupation'] ?? '';
           _roommateType = data['roommateType'] ?? '';
+          _currentProfileImageUrl = data['profileImageUrl'];
           _isLoading = false;
         });
       }
@@ -57,6 +66,86 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         );
       }
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickProfileImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        final File imageFile = File(image.path);
+        
+        // Check file size (max 2MB)
+        final fileSize = await imageFile.length();
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        
+        if (fileSize > maxSize) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Image size must be less than 2MB. Current size: ${ImageKitService.formatFileSize(fileSize)}',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+
+        setState(() {
+          _profileImage = imageFile;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Profile image selected! It will be uploaded when you update profile.'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text('Error: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -82,6 +171,60 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) throw Exception('No user logged in');
 
+        // Upload profile image to ImageKit if selected
+        String? profileImageUrl = _currentProfileImageUrl;
+        if (_profileImage != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Text('Uploading profile image...'),
+                  ],
+                ),
+                duration: Duration(seconds: 30),
+              ),
+            );
+          }
+
+          final fileName = 'roommate_profile_${user.uid}.jpg';
+          profileImageUrl = await ImageKitService.uploadImage(
+            imageFile: _profileImage!,
+            fileName: fileName,
+            folder: 'roommate/profiles',
+          );
+
+          if (profileImageUrl == null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.warning, color: Colors.white),
+                      SizedBox(width: 8),
+                      Expanded(child: Text('Profile image upload failed, but other updates will continue.')),
+                    ],
+                  ),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            profileImageUrl = _currentProfileImageUrl; // Keep old URL if upload fails
+          }
+        }
+
         // Update user data in Firestore
         await FirebaseFirestore.instance
             .collection('users')
@@ -92,6 +235,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           'whatsappNumber': _whatsappController.text.trim(),
           'occupation': _occupationController.text.trim(),
           'roommateType': _roommateType,
+          'profileImageUrl': profileImageUrl,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -211,6 +355,11 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                       title: 'Profile Information',
                       icon: Icons.person_rounded,
                       children: [
+                        const SizedBox(height: 16),
+                        
+                        // Profile Image Upload Card
+                        _buildProfileImageUploadCard(),
+                        
                         const SizedBox(height: 16),
                         _buildModernTextField(
                           controller: _occupationController,
@@ -460,6 +609,178 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       items: items,
       onChanged: onChanged,
       validator: validator,
+    );
+  }
+
+  Widget _buildProfileImageUploadCard() {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryColor.withValues(alpha: .1),
+            primaryColor.withValues(alpha: .05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: .3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          if (_profileImage != null) ...[
+            // Display newly selected image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                _profileImage!,
+                height: 150,
+                width: 150,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.green, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Ready to upload',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (_currentProfileImageUrl != null && _currentProfileImageUrl!.isNotEmpty) ...[
+            // Display current profile image from URL
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                _currentProfileImageUrl!,
+                height: 150,
+                width: 150,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 150,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.person_outline_rounded,
+                      size: 48,
+                      color: primaryColor,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.blue, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cloud_done, color: Colors.blue, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Current Photo',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Icon(
+              Icons.person_outline_rounded,
+              size: 48,
+              color: primaryColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Update Profile Picture',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: onSurface.withValues(alpha: .8),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Max size: 2MB • JPG, PNG',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: onSurface.withValues(alpha: .6),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: !_isPickingImage ? _pickProfileImage : null,
+            icon: _isPickingImage
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Icon(
+                    _profileImage != null || _currentProfileImageUrl != null
+                        ? Icons.refresh
+                        : Icons.upload_rounded,
+                  ),
+            label: Text(_isPickingImage
+                ? 'Processing...'
+                : _profileImage != null || _currentProfileImageUrl != null
+                    ? 'Change Photo'
+                    : 'Choose Photo'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.blue[700],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
