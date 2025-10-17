@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:roommate/login.dart';
-import 'package:roommate/nidscrape.dart';
+import 'package:roommate/subpages/nidscrape.dart';
 import 'package:roommate/services/imagekit_service.dart';
 import 'dart:io';
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:roommate/createnew.dart';
+import 'package:roommate/findroommate.dart';
 import 'package:roommate/login.dart';
 import 'package:roommate/profile.dart';
 import 'firebase_options.dart';
@@ -22,10 +24,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      initialRoute: '/profile',
+      initialRoute: '/findroommate',
       routes: {
         '/login': (context) => LoginPage(),
         '/profile': (context) => const ProfilePage(),
+        '/findroommate': (context) => const FindRoommatePage(),
+        '/create': (context) => const CreateNewPostPage(),
       },
     );
   }

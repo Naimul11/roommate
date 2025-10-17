@@ -68,7 +68,7 @@ class MenuDrawer extends StatelessWidget {
           children: [
             // Modern Header
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+              padding: const EdgeInsets.fromLTRB(20, 90, 20, 30), // move everything further down
               child: Column(
                 children: [
                   Row(
@@ -96,7 +96,7 @@ class MenuDrawer extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 5),
                           const Text(
                             'Roommate',
                             style: TextStyle(
@@ -109,8 +109,7 @@ class MenuDrawer extends StatelessWidget {
                         ],
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 15),
+                  ), 
                 ],
               ),
             ),
@@ -154,6 +153,15 @@ class MenuDrawer extends StatelessWidget {
                                 );
                               },
                             ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.search,
+                            title: 'Find Roommate',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/findroommate');
+                            },
+                          ),
                         ],
                       ),
                     ),
