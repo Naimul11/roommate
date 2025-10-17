@@ -162,6 +162,15 @@ class MenuDrawer extends StatelessWidget {
                               Navigator.pushReplacementNamed(context, '/findroommate');
                             },
                           ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.hotel,
+                            title: 'Find Room',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/findroom');
+                            },
+                          ),
                         ],
                       ),
                     ),

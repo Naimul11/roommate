@@ -16,13 +16,10 @@ class CreateNewPostPage extends StatefulWidget {
 
 class _CreateNewPostPageState extends State<CreateNewPostPage> {
   String _getDateString(String postDocId) {
-    // Extract date and convert YYYY-MM-DD to YYYY_MM_DD format
-    final dateRegExp = RegExp(r'(\d{4})-(\d{2})-(\d{2})');
+    // If postDocId contains extra random string, extract only the date part (YYYY-MM-DD)
+    final dateRegExp = RegExp(r'(\d{4}-\d{2}-\d{2})');
     final match = dateRegExp.firstMatch(postDocId);
-    if (match != null) {
-      return '${match.group(1)}_${match.group(2)}_${match.group(3)}';
-    }
-    return postDocId.replaceAll('-', '_');
+    return match != null ? match.group(1)! : postDocId;
   }
   final _formKey = GlobalKey<FormState>();
   

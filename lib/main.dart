@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:roommate/subpages/createnew.dart';
 import 'package:roommate/findroommate.dart';
+import 'package:roommate/findroom.dart';
 import 'package:roommate/login.dart';
 import 'package:roommate/profile.dart';
 import 'firebase_options.dart';
@@ -29,6 +30,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/profile': (context) => const ProfilePage(),
         '/findroommate': (context) => const FindRoommatePage(),
+        '/findroom': (context) => const FindRoomPage(),
         '/create': (context) => const CreateNewPostPage(),
       },
     );
