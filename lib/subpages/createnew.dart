@@ -231,6 +231,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
       // Prepare base post data
       final Map<String, dynamic> postData = {
+        'userId': uid,
         'location': _locationController.text.trim(),
         'floor': _floorController.text.trim(),
         'facilities': _facilitiesController.text.trim(),

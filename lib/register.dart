@@ -97,23 +97,6 @@ class _RegisterPageState extends State<RegisterPage> {
           _dobController.text = nidData['dob'] ?? '';
           _nidNumberController.text = nidData['nidNumber'] ?? '';
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('NID scanned successfully!'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {

@@ -20,6 +20,34 @@ class RoomDetailsPage extends StatelessWidget {
     }
   }
 
+  Future<DocumentSnapshot?> _checkApprovedRequest(String posterId) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return null;
+
+      final postId = postData['postId'] ?? '';
+      if (postId.isEmpty) return null;
+
+      // Check if there's an approved request for this post
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('notifications')
+          .where('posterId', isEqualTo: posterId)
+          .where('postId', isEqualTo: postId)
+          .where('status', isEqualTo: 'approved')
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final location = postData['location'] ?? 'Unknown location';
@@ -122,46 +150,79 @@ class RoomDetailsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  if (postData['updatedAt'] != null)
-                    Row(
-                      children: [
-                        Icon(Icons.update, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Updated: ${DateFormat('MMM d, y \'at\' h:mm a').format((postData['updatedAt'] as Timestamp).toDate())}',
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
+                  // Removed updated time
 
                   const SizedBox(height: 32),
 
                   // Contact Button
-                  FutureBuilder<Map<String, dynamic>?>(
-                    future: _getUserInfo(userId),
-                    builder: (context, snapshot) {
-                      return SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showContactDialog(context, snapshot.data),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade700,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  FutureBuilder<DocumentSnapshot?>(
+                    future: _checkApprovedRequest(userId),
+                    builder: (context, approvalSnapshot) {
+                      // Check if there's an approved request
+                      if (approvalSnapshot.hasData && 
+                          approvalSnapshot.data != null && 
+                          approvalSnapshot.data!.exists) {
+                        final approvalData = approvalSnapshot.data!.data() as Map<String, dynamic>;
+                        
+                        // Show contact info if approved
+                        return Card(
+                          color: Colors.green.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.green.shade700),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Contact Information',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                _buildDetailRow('Email', approvalData['posterEmail'] ?? 'N/A'),
+                                _buildDetailRow('Phone', approvalData['posterPhone'] ?? 'N/A'),
+                                _buildDetailRow('WhatsApp', approvalData['posterWhatsapp'] ?? 'N/A'),
+                              ],
                             ),
-                            elevation: 4,
                           ),
-                          icon: const Icon(Icons.contact_phone, size: 24),
-                          label: const Text(
-                            'Contact the Person',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        );
+                      }
+
+                      // Show contact button if not approved
+                      return FutureBuilder<Map<String, dynamic>?>(
+                        future: _getUserInfo(userId),
+                        builder: (context, snapshot) {
+                          return SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _showContactDialog(context, snapshot.data),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade700,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                              ),
+                              icon: const Icon(Icons.contact_phone, size: 24),
+                              label: const Text(
+                                'Contact the Person',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -353,7 +414,7 @@ class RoomDetailsPage extends StatelessWidget {
     );
   }
 
-  void _showContactDialog(BuildContext context, Map<String, dynamic>? userData) {
+  void _showContactDialog(BuildContext context, Map<String, dynamic>? userData) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     
     if (currentUser == null) {
@@ -366,49 +427,105 @@ class RoomDetailsPage extends StatelessWidget {
       return;
     }
 
-    if (userData == null) {
+    final posterId = postData['userId'] ?? '';
+    
+    if (posterId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Unable to load contact information'),
+          content: Text('Unable to identify poster'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final name = userData['name'] ?? 'Unknown';
-    final email = userData['email'] ?? 'N/A';
-    final phone = userData['phone'] ?? 'N/A';
+    // Check if user is trying to contact themselves
+    if (currentUser.uid == posterId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You cannot contact your own post'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.person, color: Colors.blue.shade700),
-            const SizedBox(width: 8),
-            const Text('Contact Information'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildContactInfo(Icons.person_outline, 'Name', name),
-            const SizedBox(height: 12),
-            _buildContactInfo(Icons.email_outlined, 'Email', email),
-            const SizedBox(height: 12),
-            _buildContactInfo(Icons.phone_outlined, 'Phone', phone),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+    try {
+      // Get current user's data (excluding NID)
+      final currentUserDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      
+      if (!currentUserDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to load your profile'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
+        );
+        return;
+      }
+
+      final currentUserData = currentUserDoc.data()!;
+      
+      // Prepare notification data (without NID)
+      final notificationData = {
+  'requesterId': currentUser.uid,
+  'requesterName': currentUserData['nidName'] ?? 'Unknown',
+  'requesterEmail': currentUserData['email'] ?? 'N/A',
+  'requesterPhone': currentUserData['mobileNumber'] ?? 'N/A',
+  'requesterWhatsapp': currentUserData['whatsappNumber'] ?? 'N/A',
+        'postLocation': postData['location'] ?? 'Unknown',
+        'postId': postData['postId'] ?? '',
+        'postOwnerId': posterId, // Add post owner ID
+        'status': 'pending',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      // Create notification for poster
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(posterId)
+          .collection('notifications')
+          .add(notificationData);
+
+      // Create notification for requester (to track request)
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('notifications')
+          .add({
+        'posterId': posterId,
+        'postOwnerId': posterId, // Add post owner ID
+        'postLocation': postData['location'] ?? 'Unknown',
+        'postId': postData['postId'] ?? '',
+        'status': 'pending',
+        'type': 'sent_request',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Contact request sent successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildContactInfo(IconData icon, String label, String value) {

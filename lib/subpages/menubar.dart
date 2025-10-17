@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:roommate/profile.dart';
 import 'package:roommate/update_profile.dart';
+import 'package:roommate/notifications.dart';
 
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -15,6 +17,8 @@ class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     return AppBar(
       title: Text(title),
       backgroundColor: Colors.blue[700],
@@ -30,6 +34,62 @@ class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 },
               ),
             )
+          : null,
+      actions: currentUser != null
+          ? [
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUser.uid)
+                    .collection('notifications')
+                    .where('isRead', isEqualTo: false)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final unreadCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                  
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '$unreadCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ]
           : null,
     );
   }

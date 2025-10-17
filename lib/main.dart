@@ -5,6 +5,7 @@ import 'package:roommate/findroommate.dart';
 import 'package:roommate/findroom.dart';
 import 'package:roommate/login.dart';
 import 'package:roommate/profile.dart';
+import 'package:roommate/notifications.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         '/findroommate': (context) => const FindRoommatePage(),
         '/findroom': (context) => const FindRoomPage(),
         '/create': (context) => const CreateNewPostPage(),
+        '/notifications': (context) => const NotificationsPage(),
       },
     );
   }
