@@ -22,6 +22,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   final TextEditingController _occupationController = TextEditingController();
   String _roommateType = '';
   bool _isLoading = true;
+  String _smoker = '';
+  String _petLover = '';
   
   // Profile image
   File? _profileImage;
@@ -52,6 +54,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           _whatsappController.text = data['whatsappNumber'] ?? '';
           _occupationController.text = data['occupation'] ?? '';
           _roommateType = data['roommateType'] ?? '';
+          _smoker = data['smoker'] ?? '';
+          _petLover = data['petLover'] ?? '';
           _currentProfileImageUrl = data['profileImageUrl'];
           _isLoading = false;
         });
@@ -235,6 +239,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           'whatsappNumber': _whatsappController.text.trim(),
           'occupation': _occupationController.text.trim(),
           'roommateType': _roommateType,
+          'smoker': _smoker,
+          'petLover': _petLover,
           'profileImageUrl': profileImageUrl,
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -441,6 +447,40 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                           label: 'Short Bio / Hobby',
                           icon: Icons.emoji_emotions_rounded,
                           maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildModernDropdown(
+                          value: _smoker.isEmpty ? null : _smoker,
+                          label: 'Are you a smoker?',
+                          icon: Icons.smoking_rooms,
+                          items: const [
+                            DropdownMenuItem(value: 'Yes', child: Text('Yes')),
+                            DropdownMenuItem(value: 'No', child: Text('No')),
+                          ],
+                          onChanged: (val) => setState(() => _smoker = val ?? ''),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select smoker status';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildModernDropdown(
+                          value: _petLover.isEmpty ? null : _petLover,
+                          label: 'Are you a pet lover?',
+                          icon: Icons.pets,
+                          items: const [
+                            DropdownMenuItem(value: 'Yes', child: Text('Yes')),
+                            DropdownMenuItem(value: 'No', child: Text('No')),
+                          ],
+                          onChanged: (val) => setState(() => _petLover = val ?? ''),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select pet lover status';
+                            }
+                            return null;
+                          },
                         ),
                       ],
                     ),

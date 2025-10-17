@@ -5,7 +5,7 @@ import 'package:roommate/findroommate.dart';
 import 'package:roommate/findroom.dart';
 import 'package:roommate/login.dart';
 import 'package:roommate/profile.dart';
-import 'package:roommate/notifications.dart';
+import 'package:roommate/subpages/notifications.dart';
 import 'firebase_options.dart';
 
 void main() async {

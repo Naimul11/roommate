@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:roommate/profile.dart';
 import 'package:roommate/update_profile.dart';
-import 'package:roommate/notifications.dart';
+import 'package:roommate/subpages/notifications.dart';
 
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;

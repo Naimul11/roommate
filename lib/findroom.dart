@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:roommate/subpages/menubar.dart';
-import 'package:roommate/roomdetails.dart';
+import 'package:roommate/subpages/roomdetails.dart';
 import 'package:intl/intl.dart';
 
 class FindRoomPage extends StatefulWidget {
@@ -14,11 +15,45 @@ class FindRoomPage extends StatefulWidget {
 class _FindRoomPageState extends State<FindRoomPage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _allPosts = [];
+  bool _matchPreferences = false;
+  
+  // User filter preferences
+  String _filterSmoker = 'Any';
+  String _filterPetLover = 'Any';
+  String _filterCleanliness = 'Any';
+  String _filterReligion = 'Any';
+  String _filterAgeRange = 'Any';
 
   @override
   void initState() {
     super.initState();
     _loadAllPosts();
+    _loadUserPreferences();
+  }
+
+  Future<void> _loadUserPreferences() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        setState(() {
+          _filterSmoker = userData['smoker'] ?? 'Any';
+          _filterPetLover = userData['petLover'] ?? 'Any';
+          _filterCleanliness = userData['cleanliness'] ?? 'Any';
+          _filterReligion = userData['religion'] ?? 'Any';
+          _filterAgeRange = userData['ageRange'] ?? 'Any';
+        });
+      }
+    } catch (e) {
+      // Silently fail if user preferences not found
+    }
   }
 
   Future<void> _loadAllPosts() async {
@@ -58,8 +93,35 @@ class _FindRoomPageState extends State<FindRoomPage> {
     }
   }
 
+  List<Map<String, dynamic>> _getFilteredPosts() {
+    if (!_matchPreferences) {
+      return _allPosts;
+    }
+
+    return _allPosts.where((post) {
+      return _matchesPreference(post['smoker'], _filterSmoker) &&
+          _matchesPreference(post['petLover'], _filterPetLover) &&
+          _matchesPreference(post['cleanliness'], _filterCleanliness) &&
+          _matchesPreference(post['preferredReligion'], _filterReligion) &&
+          _matchesPreference(post['ageRange'], _filterAgeRange);
+    }).toList();
+  }
+
+  bool _matchesPreference(String? postValue, String filterValue) {
+    // If filter is 'Any', it matches everything
+    if (filterValue == 'Any') return true;
+    
+    // If post value is 'Any', it matches everything
+    if (postValue == 'Any') return true;
+    
+    // Otherwise, they must match exactly
+    return postValue == filterValue;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filteredPosts = _getFilteredPosts();
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Find Room'),
@@ -70,19 +132,270 @@ class _FindRoomPageState extends State<FindRoomPage> {
       drawer: const MenuDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadAllPosts,
-              child: _allPosts.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _allPosts.length,
-                      itemBuilder: (context, index) {
-                        final post = _allPosts[index];
-                        return _buildPostCard(post);
-                      },
-                    ),
+          : Stack(
+              children: [
+                RefreshIndicator(
+                  onRefresh: _loadAllPosts,
+                  child: filteredPosts.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            top: 16,
+                            bottom: 80, // Space for filter button
+                          ),
+                          itemCount: filteredPosts.length,
+                          itemBuilder: (context, index) {
+                            final post = filteredPosts[index];
+                            return _buildPostCard(post);
+                          },
+                        ),
+                ),
+                // Filter button at bottom center
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _buildFilterButton(),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildFilterButton() {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(26),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        borderRadius: BorderRadius.circular(30),
+        color: _matchPreferences ? Colors.green : Colors.blue.shade700,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: () => _showFilterMenu(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _matchPreferences ? Icons.filter_alt : Icons.filter_alt_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _matchPreferences ? 'Matching Preferences' : 'Filter',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFilterMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Filter Options',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: Icon(
+                _matchPreferences ? Icons.check_circle : Icons.circle_outlined,
+                color: _matchPreferences ? Colors.green : Colors.grey,
+              ),
+              title: const Text(
+                'Match Preferences',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                _matchPreferences
+                    ? 'Showing posts matching your preferences'
+                    : 'Show posts that match your preferences',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              onTap: () {
+                setState(() {
+                  _matchPreferences = !_matchPreferences;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.edit, color: Colors.blue.shade700),
+              title: const Text(
+                'Edit Preferences',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                'Adjust your filter preferences',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditPreferencesDialog();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditPreferencesDialog() {
+  String tempSmoker = _filterSmoker;
+  String tempPetLover = _filterPetLover;
+  String tempReligion = _filterReligion;
+  String tempAgeRange = _filterAgeRange;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Filter Preferences'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildPreferenceDropdown(
+                  label: 'Smoker',
+                  value: tempSmoker,
+                  items: const ['Any', 'Yes', 'No'],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      tempSmoker = value!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildPreferenceDropdown(
+                  label: 'Pet Lover',
+                  value: tempPetLover,
+                  items: const ['Any', 'Yes', 'No'],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      tempPetLover = value!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Cleanliness preference removed
+                _buildPreferenceDropdown(
+                  label: 'Religion',
+                  value: tempReligion,
+                  items: const ['Any', 'Islam', 'Hindu', 'Christian', 'Buddhist'],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      tempReligion = value!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildPreferenceDropdown(
+                  label: 'Age Range',
+                  value: tempAgeRange,
+                  items: const ['Any', '<20', '<30', '<40'],
+                  onChanged: (value) {
+                    setDialogState(() {
+                      tempAgeRange = value!;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _filterSmoker = tempSmoker;
+                  _filterPetLover = tempPetLover;
+                  _filterReligion = tempReligion;
+                  _filterAgeRange = tempAgeRange;
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Filter preferences updated'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreferenceDropdown({
+    required String label,
+    required String value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      items: items.map((item) {
+        return DropdownMenuItem(
+          value: item,
+          child: Text(item),
+        );
+      }).toList(),
+      onChanged: onChanged,
     );
   }
 

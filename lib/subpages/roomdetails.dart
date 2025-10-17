@@ -133,6 +133,10 @@ class RoomDetailsPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildDetailRow('Gender', postData['gender'] ?? 'N/A'),
                   _buildDetailRow('Preferred Religion', postData['preferredReligion'] ?? 'N/A'),
+                  _buildDetailRow('Smoker', postData['smoker'] ?? 'N/A'),
+                  _buildDetailRow('Pet Lover', postData['petLover'] ?? 'N/A'),
+                  _buildDetailRow('Cleanliness', postData['cleanliness'] ?? 'N/A'),
+                  _buildDetailRow('Age Range', postData['ageRange'] ?? 'N/A'),
 
                   const SizedBox(height: 24),
 
@@ -528,37 +532,6 @@ class RoomDetailsPage extends StatelessWidget {
     }
   }
 
-  Widget _buildContactInfo(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey.shade700),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 // Full screen gallery widget

@@ -42,7 +42,11 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
   // Dropdown values
   String? _roomType;
   String? _gender;
-  String? _preferredReligion;
+  String? _preferredReligion = 'Any';
+  String? _smoker = 'Any';
+  String? _petLover = 'Any';
+  String? _cleanliness = 'Any';
+  String? _ageRange = 'Any';
   
   bool _isEditMode = false;
   bool _isLoadingData = false;
@@ -100,6 +104,10 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         _roomType = data['roomType'];
         _gender = data['gender'];
         _preferredReligion = data['preferredReligion'];
+        _smoker = data['smoker'];
+        _petLover = data['petLover'];
+        _cleanliness = data['cleanliness'];
+        _ageRange = data['ageRange'];
       });
     } catch (e) {
       if (mounted) {
@@ -245,6 +253,10 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
             : null,
         'gender': _gender,
         'preferredReligion': _preferredReligion,
+        'smoker': _smoker,
+        'petLover': _petLover,
+        'cleanliness': _cleanliness,
+        'ageRange': _ageRange,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -816,6 +828,80 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please select preferred religion';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildModernDropdown(
+          value: _smoker,
+          label: 'Smoker',
+          icon: Icons.smoking_rooms,
+          items: const [
+            DropdownMenuItem(value: 'Any', child: Text('Any')),
+            DropdownMenuItem(value: 'Yes', child: Text('Yes')),
+            DropdownMenuItem(value: 'No', child: Text('No')),
+          ],
+          onChanged: (value) => setState(() => _smoker = value),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select smoker preference';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildModernDropdown(
+          value: _petLover,
+          label: 'Pet Lover',
+          icon: Icons.pets,
+          items: const [
+            DropdownMenuItem(value: 'Any', child: Text('Any')),
+            DropdownMenuItem(value: 'Yes', child: Text('Yes')),
+            DropdownMenuItem(value: 'No', child: Text('No')),
+          ],
+          onChanged: (value) => setState(() => _petLover = value),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select pet lover preference';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildModernDropdown(
+          value: _cleanliness,
+          label: 'Cleanliness',
+          icon: Icons.cleaning_services,
+          items: const [
+            DropdownMenuItem(value: 'Any', child: Text('Any')),
+            DropdownMenuItem(value: 'Very Tidy', child: Text('Very Tidy')),
+            DropdownMenuItem(value: 'Moderate', child: Text('Moderate')),
+            DropdownMenuItem(value: 'Low', child: Text('Low')),
+          ],
+          onChanged: (value) => setState(() => _cleanliness = value),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select cleanliness preference';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildModernDropdown(
+          value: _ageRange,
+          label: 'Age Range',
+          icon: Icons.cake,
+          items: const [
+            DropdownMenuItem(value: 'Any', child: Text('Any Age')),
+            DropdownMenuItem(value: '<20', child: Text('< 20')),
+            DropdownMenuItem(value: '<30', child: Text('< 30')),
+            DropdownMenuItem(value: '<40', child: Text('< 40')),
+          ],
+          onChanged: (value) => setState(() => _ageRange = value),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select age range';
             }
             return null;
           },
