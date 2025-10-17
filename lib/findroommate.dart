@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:roommate/createnew.dart';
+import 'package:roommate/subpages/createnew.dart';
 import 'package:roommate/subpages/menubar.dart';
 import 'package:intl/intl.dart';
 
@@ -36,7 +36,7 @@ class _FindRoommatePageState extends State<FindRoommatePage> {
           "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
       final docSnapshot = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('posts')
           .doc(currentUser!.uid)
           .collection('post')
           .doc(todayDate)
@@ -226,7 +226,7 @@ class _FindRoommatePageState extends State<FindRoommatePage> {
         const SizedBox(height: 16),
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
-              .collection('users')
+              .collection('posts')
               .doc(currentUser!.uid)
               .collection('post')
               .snapshots(),
@@ -302,12 +302,12 @@ class _FindRoommatePageState extends State<FindRoommatePage> {
   }
 
   Widget _buildPostCard(String postId, Map<String, dynamic> data) {
-    final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-    final location = data['location'] ?? 'Unknown location';
-    final roomType = data['roomType'] ?? 'N/A';
-    final floor = data['floor'] ?? 'N/A';
-    final totalCost = data['totalCost']?.toDouble() ?? 0.0;
-    final mainRoomImageUrl = data['mainRoomImage'] as String?;
+  final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+  final location = data['location'] ?? 'Unknown location';
+  final roomType = data['roomType'] ?? 'N/A';
+  final floor = data['floor'] ?? 'N/A';
+  final totalCost = data['totalCost']?.toDouble() ?? 0.0;
+  final mainRoomImageUrl = data['mainRoomImageUrl'] as String?;
 
     // Check if this post was created today
     final isToday =
@@ -492,11 +492,6 @@ class _FindRoommatePageState extends State<FindRoommatePage> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.attach_money,
-                            color: Colors.green.shade700,
-                            size: 16,
-                          ),
                           Text(
                             '৳${totalCost.toStringAsFixed(0)}/mo',
                             style: TextStyle(

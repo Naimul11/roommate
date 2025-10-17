@@ -68,7 +68,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         return;
       }
       final doc = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('posts')
           .doc(user.uid)
           .collection('post')
           .doc(widget.postId)
@@ -282,7 +282,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
       if (_isEditMode) {
         // Update existing post
         await FirebaseFirestore.instance
-            .collection('users')
+            .collection('posts')
             .doc(uid)
             .collection('post')
             .doc(postDocId)
@@ -303,7 +303,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         postData['createdAt'] = FieldValue.serverTimestamp();
 
         await FirebaseFirestore.instance
-            .collection('users')
+            .collection('posts')
             .doc(uid)
             .collection('post')
             .doc(postDocId)
