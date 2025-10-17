@@ -99,6 +99,54 @@ class _FindRoommatePageState extends State<FindRoommatePage> {
     );
   }
 
+  Future<void> _confirmDeletePost(String postId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text(
+          'Are you sure you want to delete this post? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deletePost(postId);
+    }
+  }
+
+  Future<void> _deletePost(String postId) async {
+    if (currentUser == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('posts')
+          .doc(currentUser!.uid)
+          .collection('post')
+          .doc(postId)
+          .delete();
+
+      _showSnackBar('Post deleted successfully!');
+      _checkPostEligibility();
+    } catch (e) {
+      _showSnackBar('Error deleting post: $e', isError: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -383,21 +431,59 @@ class _FindRoommatePageState extends State<FindRoommatePage> {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _navigateToCreatePost(postId: postId),
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('Edit', style: TextStyle(fontSize: 13)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _navigateToCreatePost(postId: postId);
+                        } else if (value == 'delete') {
+                          _confirmDeletePost(postId);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, size: 18, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text('Edit'),
+                            ],
+                          ),
                         ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, size: 18, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Delete'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
-                        elevation: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade700,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.more_vert, size: 16, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'Options',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -25,14 +25,19 @@ class ImageKitService {
       }
 
       final auth = base64Encode(utf8.encode('$_privateKey:'));
-      final finalFileName = folder != null ? '$folder/$fileName' : fileName;
 
       final uri = Uri.parse(_uploadEndpoint);
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Basic $auth'
-        ..fields['fileName'] = finalFileName
+        ..fields['fileName'] = fileName
         ..fields['publicKey'] = _publicKey
-        ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+        ..fields['useUniqueFileName'] = 'false';
+      
+      if (folder != null) {
+        request.fields['folder'] = folder;
+      }
+      
+      request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);

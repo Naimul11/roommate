@@ -15,6 +15,15 @@ class CreateNewPostPage extends StatefulWidget {
 }
 
 class _CreateNewPostPageState extends State<CreateNewPostPage> {
+  String _getDateString(String postDocId) {
+    // Extract date and convert YYYY-MM-DD to YYYY_MM_DD format
+    final dateRegExp = RegExp(r'(\d{4})-(\d{2})-(\d{2})');
+    final match = dateRegExp.firstMatch(postDocId);
+    if (match != null) {
+      return '${match.group(1)}_${match.group(2)}_${match.group(3)}';
+    }
+    return postDocId.replaceAll('-', '_');
+  }
   final _formKey = GlobalKey<FormState>();
   
   // Image files
@@ -248,7 +257,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         if (_mainRoomImage != null) {
           final mainRoomUrl = await ImageKitService.uploadImage(
             imageFile: _mainRoomImage!,
-            fileName: 'post_${uid}_${postDocId}_main_room.jpg',
+            fileName: 'roommate_post_main_${uid}_${_getDateString(postDocId)}.jpg',
             folder: 'roommate/posts/$uid',
           );
           if (mainRoomUrl != null) {
@@ -259,7 +268,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         if (_mainSpotImage != null) {
           final mainSpotUrl = await ImageKitService.uploadImage(
             imageFile: _mainSpotImage!,
-            fileName: 'post_${uid}_${postDocId}_main_spot.jpg',
+            fileName: 'roommate_post_spot_${uid}_${_getDateString(postDocId)}.jpg',
             folder: 'roommate/posts/$uid',
           );
           if (mainSpotUrl != null) {
@@ -270,7 +279,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         if (_differentAngleImage != null) {
           final differentAngleUrl = await ImageKitService.uploadImage(
             imageFile: _differentAngleImage!,
-            fileName: 'post_${uid}_${postDocId}_different_angle.jpg',
+            fileName: 'roommate_post_different_${uid}_${_getDateString(postDocId)}.jpg',
             folder: 'roommate/posts/$uid',
           );
           if (differentAngleUrl != null) {
