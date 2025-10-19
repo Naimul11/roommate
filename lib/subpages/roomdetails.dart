@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'report.dart';
 
 class RoomDetailsPage extends StatelessWidget {
   final Map<String, dynamic> postData;
@@ -45,6 +46,133 @@ class RoomDetailsPage extends StatelessWidget {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<int> _getReportCount(String email) async {
+    try {
+      final reportDoc = await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(email)
+          .get();
+      
+      if (reportDoc.exists) {
+        return reportDoc.data()?['reportCount'] ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<void> _showReportsDialog(BuildContext context, String email) async {
+    try {
+      final reportsSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(email)
+          .collection('reports')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      if (!context.mounted) return;
+
+      if (reportsSnapshot.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No reports found'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.report, color: Colors.red.shade700),
+              const SizedBox(width: 8),
+              const Text('Reports'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: reportsSnapshot.docs.length,
+              itemBuilder: (context, index) {
+                final report = reportsSnapshot.docs[index].data();
+                final timestamp = report['timestamp'] as Timestamp?;
+                final dateStr = timestamp != null
+                    ? DateFormat('MMM d, y').format(timestamp.toDate())
+                    : 'N/A';
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                report['reporterName'] ?? 'Unknown',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              dateStr,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Reason:',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          report['reason'] ?? 'No reason provided',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading reports: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -167,35 +295,102 @@ class RoomDetailsPage extends StatelessWidget {
                           approvalSnapshot.data != null && 
                           approvalSnapshot.data!.exists) {
                         final approvalData = approvalSnapshot.data!.data() as Map<String, dynamic>;
+                        final posterEmail = approvalData['posterEmail'] ?? '';
+                        final posterName = approvalData['posterName'] ?? 'Unknown';
                         
                         // Show contact info if approved
-                        return Card(
-                          color: Colors.green.shade50,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                        return FutureBuilder<int>(
+                          future: _getReportCount(posterEmail),
+                          builder: (context, reportSnapshot) {
+                            final reportCount = reportSnapshot.data ?? 0;
+                            
+                            return Card(
+                              color: Colors.green.shade50,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.check_circle, color: Colors.green.shade700),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Contact Information',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                    Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.green.shade700),
+                                        const SizedBox(width: 8),
+                                        const Expanded(
+                                          child: Text(
+                                            'Contact Information',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        if (reportCount > 0)
+                                          GestureDetector(
+                                            onTap: () => _showReportsDialog(context, posterEmail),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.red.shade100,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                'Reported ${reportCount}x',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red.shade900,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildDetailRow('Email', posterEmail.isEmpty ? 'N/A' : posterEmail),
+                                    _buildDetailRow('Phone', approvalData['posterPhone'] ?? 'N/A'),
+                                    _buildDetailRow('WhatsApp', approvalData['posterWhatsapp'] ?? 'N/A'),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () async {
+                                          final result = await Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => ReportPage(
+                                                contactEmail: posterEmail,
+                                                contactName: posterName,
+                                              ),
+                                            ),
+                                          );
+                                          // Refresh if report was submitted
+                                          if (result == true && context.mounted) {
+                                            // Force rebuild by calling setState in parent
+                                            (context as Element).markNeedsBuild();
+                                          }
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.red.shade700,
+                                          side: BorderSide(color: Colors.red.shade700),
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        icon: const Icon(Icons.report, size: 20),
+                                        label: const Text(
+                                          'Report This Contact',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
-                                _buildDetailRow('Email', approvalData['posterEmail'] ?? 'N/A'),
-                                _buildDetailRow('Phone', approvalData['posterPhone'] ?? 'N/A'),
-                                _buildDetailRow('WhatsApp', approvalData['posterWhatsapp'] ?? 'N/A'),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         );
                       }
 
@@ -473,13 +668,25 @@ class RoomDetailsPage extends StatelessWidget {
 
       final currentUserData = currentUserDoc.data()!;
       
+      // Get poster's data to include their name
+      final posterDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(posterId)
+          .get();
+      
+      final posterData = posterDoc.data() ?? {};
+      
       // Prepare notification data (without NID)
       final notificationData = {
-  'requesterId': currentUser.uid,
-  'requesterName': currentUserData['nidName'] ?? 'Unknown',
-  'requesterEmail': currentUserData['email'] ?? 'N/A',
-  'requesterPhone': currentUserData['mobileNumber'] ?? 'N/A',
-  'requesterWhatsapp': currentUserData['whatsappNumber'] ?? 'N/A',
+        'requesterId': currentUser.uid,
+        'requesterName': currentUserData['nidName'] ?? 'Unknown',
+        'requesterEmail': currentUserData['email'] ?? 'N/A',
+        'requesterPhone': currentUserData['mobileNumber'] ?? 'N/A',
+        'requesterWhatsapp': currentUserData['whatsappNumber'] ?? 'N/A',
+        'posterName': posterData['nidName'] ?? 'Unknown', // Add poster name
+        'posterEmail': posterData['email'] ?? 'N/A', // Add poster email
+        'posterPhone': posterData['mobileNumber'] ?? 'N/A', // Add poster phone
+        'posterWhatsapp': posterData['whatsappNumber'] ?? 'N/A', // Add poster whatsapp
         'postLocation': postData['location'] ?? 'Unknown',
         'postId': postData['postId'] ?? '',
         'postOwnerId': posterId, // Add post owner ID
