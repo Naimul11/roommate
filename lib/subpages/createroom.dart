@@ -97,6 +97,33 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
     });
   }
 
+  Future<void> _fetchUserNameByEmail(int index, String email) async {
+    if (email.isEmpty || !email.contains('@')) {
+      return;
+    }
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty && mounted) {
+        final userData = querySnapshot.docs.first.data();
+        final userName = userData['nidName'] ?? '';
+
+        if (userName.isNotEmpty) {
+          setState(() {
+            _userFields[index]['name']?.text = userName;
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
   void _addFoodField() {
     setState(() {
       _foodFields.add({
@@ -862,25 +889,13 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
           ),
           const SizedBox(height: 12),
           _buildTextField(
-            controller: _userFields[index]['name']!,
-            label: 'User Name',
-            icon: Icons.person,
-            validator: (value) {
-              if (value != null && value.isNotEmpty) {
-                final gmail = _userFields[index]['gmail']?.text ?? '';
-                if (gmail.isEmpty) {
-                  return 'Gmail is required if name is provided';
-                }
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildTextField(
             controller: _userFields[index]['gmail']!,
             label: 'User Gmail',
             icon: Icons.email,
             keyboardType: TextInputType.emailAddress,
+            onChanged: (value) {
+              _fetchUserNameByEmail(index, value);
+            },
             validator: (value) {
               if (value != null && value.isNotEmpty) {
                 if (!value.contains('@')) {
@@ -888,7 +903,23 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                 }
                 final name = _userFields[index]['name']?.text ?? '';
                 if (name.isEmpty) {
-                  return 'Name is required if gmail is provided';
+                  return 'User not found with this email';
+                }
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildTextField(
+            controller: _userFields[index]['name']!,
+            label: 'User Name',
+            icon: Icons.person,
+            enabled: false,
+            validator: (value) {
+              if (value != null && value.isNotEmpty) {
+                final gmail = _userFields[index]['gmail']?.text ?? '';
+                if (gmail.isEmpty) {
+                  return 'Gmail is required if name is provided';
                 }
               }
               return null;

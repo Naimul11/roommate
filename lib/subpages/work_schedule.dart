@@ -45,6 +45,35 @@ class _WorkSchedulePageState extends State<WorkSchedulePage> {
   }
 
   Future<void> _markAsDone(String workId, String currentAssignee) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Completion'),
+          content: const Text(
+            'Are you sure you want to mark this work as done? It will be assigned to the next roommate.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
     try {
       final users = _selectedRoomData?['users'] as List? ?? [];
 
