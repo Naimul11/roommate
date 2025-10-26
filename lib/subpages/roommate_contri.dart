@@ -254,179 +254,209 @@ class _RoommateContributionPageState extends State<RoommateContributionPage> {
     String userEmail,
     double splitAmount,
   ) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('rooms')
-          .doc(_selectedRoomId)
-          .collection('contributions')
-          .where('userEmail', isEqualTo: userEmail)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        final contributions = snapshot.data?.docs ?? [];
-
-        // Sort contributions by date
-        final sortedContributions = contributions.toList()
-          ..sort((a, b) {
-            final aTime =
-                (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
-            final bTime =
-                (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
-            if (aTime == null && bTime == null) return 0;
-            if (aTime == null) return 1;
-            if (bTime == null) return -1;
-            return bTime.compareTo(aTime);
-          });
-
-        // Calculate total contributed
-        double totalContributed = 0;
-        for (var doc in sortedContributions) {
-          final data = doc.data() as Map<String, dynamic>;
-          totalContributed += (data['totalAmount'] ?? 0).toDouble();
-        }
-
-        final remaining = splitAmount - totalContributed;
-        final isPaid = remaining <= 0;
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return FutureBuilder<DocumentSnapshot?>(
+      future: _firestore
+          .collection('users')
+          .where('email', isEqualTo: userEmail)
+          .limit(1)
+          .get()
+          .then(
+            (snapshot) => snapshot.docs.isNotEmpty ? snapshot.docs.first : null,
           ),
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              leading: CircleAvatar(
-                backgroundColor: isPaid ? Colors.green : Colors.orange,
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              title: Text(
-                userName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              subtitle: Text(
-                userEmail,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    isPaid ? 'PAID' : 'DUE',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isPaid ? Colors.green : Colors.orange,
-                    ),
-                  ),
-                  Text(
-                    '৳${remaining.abs().toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isPaid ? Colors.green : Colors.orange,
-                    ),
-                  ),
-                ],
-              ),
-              children: [
-                Padding(
+      builder: (context, userSnapshot) {
+        String? profileImageUrl;
+        if (userSnapshot.hasData && userSnapshot.data != null) {
+          final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+          profileImageUrl = userData?['profileImageUrl'];
+        }
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: _firestore
+              .collection('rooms')
+              .doc(_selectedRoomId)
+              .collection('contributions')
+              .where('userEmail', isEqualTo: userEmail)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Container(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              );
+            }
+
+            final contributions = snapshot.data?.docs ?? [];
+
+            // Sort contributions by date
+            final sortedContributions = contributions.toList()
+              ..sort((a, b) {
+                final aTime =
+                    (a.data() as Map<String, dynamic>)['createdAt']
+                        as Timestamp?;
+                final bTime =
+                    (b.data() as Map<String, dynamic>)['createdAt']
+                        as Timestamp?;
+                if (aTime == null && bTime == null) return 0;
+                if (aTime == null) return 1;
+                if (bTime == null) return -1;
+                return bTime.compareTo(aTime);
+              });
+
+            // Calculate total contributed
+            double totalContributed = 0;
+            for (var doc in sortedContributions) {
+              final data = doc.data() as Map<String, dynamic>;
+              totalContributed += (data['totalAmount'] ?? 0).toDouble();
+            }
+
+            final remaining = splitAmount - totalContributed;
+            final isPaid = remaining <= 0;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundImage:
+                        profileImageUrl != null && profileImageUrl.isNotEmpty
+                        ? NetworkImage(profileImageUrl)
+                        : null,
+                    child: profileImageUrl == null || profileImageUrl.isEmpty
+                        ? Text(
+                            userName.isNotEmpty
+                                ? userName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
+                  title: Text(
+                    userName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  subtitle: Text(
+                    userEmail,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // Summary
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildDetailItem(
-                              'Required',
-                              splitAmount,
-                              Colors.blue,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey[300],
-                            ),
-                            _buildDetailItem(
-                              'Contributed',
-                              totalContributed,
-                              Colors.green,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 30,
-                              color: Colors.grey[300],
-                            ),
-                            _buildDetailItem(
-                              'Remaining',
-                              remaining.abs(),
-                              isPaid ? Colors.green : Colors.orange,
-                            ),
-                          ],
+                      Text(
+                        isPaid ? 'PAID' : 'DUE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isPaid ? Colors.green : Colors.orange,
                         ),
                       ),
-
-                      const SizedBox(height: 16),
-
-                      // Contribution History
-                      if (sortedContributions.isEmpty)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'No contributions yet',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ),
-                        )
-                      else ...[
-                        const Text(
-                          'Contribution History',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                      Text(
+                        '৳${remaining.abs().toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isPaid ? Colors.green : Colors.orange,
                         ),
-                        const SizedBox(height: 8),
-                        ...sortedContributions.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          return _buildContributionHistoryItem(data);
-                        }),
-                      ],
+                      ),
                     ],
                   ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Summary
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildDetailItem(
+                                  'Required',
+                                  splitAmount,
+                                  Colors.blue,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 30,
+                                  color: Colors.grey[300],
+                                ),
+                                _buildDetailItem(
+                                  'Contributed',
+                                  totalContributed,
+                                  Colors.green,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 30,
+                                  color: Colors.grey[300],
+                                ),
+                                _buildDetailItem(
+                                  'Remaining',
+                                  remaining.abs(),
+                                  isPaid ? Colors.green : Colors.orange,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Contribution History
+                          if (sortedContributions.isEmpty)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  'No contributions yet',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ),
+                            )
+                          else ...[
+                            const Text(
+                              'Contribution History',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ...sortedContributions.map((doc) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              return _buildContributionHistoryItem(data);
+                            }),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

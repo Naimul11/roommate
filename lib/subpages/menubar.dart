@@ -303,7 +303,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
                               _buildSubMenuItem(
                                 context,
                                 icon: Icons.payment,
-                                title: 'My Contributions',
+                                title: 'My Contribution',
                                 onTap: () {
                                   Navigator.pop(context);
                                   Navigator.push(
@@ -318,7 +318,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
                               _buildSubMenuItem(
                                 context,
                                 icon: Icons.people_outline,
-                                title: 'Others Contributions',
+                                title: 'Others Contribution',
                                 onTap: () {
                                   Navigator.pop(context);
                                   Navigator.push(

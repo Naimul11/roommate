@@ -16,6 +16,7 @@ class _ContributionPageState extends State<ContributionPage> {
   Map<String, dynamic>? _selectedRoomData;
   String? _userName;
   String? _userEmail;
+  String? _userProfileImageUrl;
 
   final List<Map<String, TextEditingController>> _billFields = [];
   bool _isLoading = false;
@@ -40,12 +41,14 @@ class _ContributionPageState extends State<ContributionPage> {
           setState(() {
             _userName = userData?['nidName'] ?? 'Unknown';
             _userEmail = user.email ?? '';
+            _userProfileImageUrl = userData?['profileImageUrl'];
           });
         }
       } catch (e) {
         setState(() {
           _userName = 'Unknown';
           _userEmail = user.email ?? '';
+          _userProfileImageUrl = null;
         });
       }
     }
@@ -287,19 +290,26 @@ class _ContributionPageState extends State<ContributionPage> {
                       children: [
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          child: Text(
-                            _userName?.isNotEmpty == true
-                                ? _userName![0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundImage:
+                              _userProfileImageUrl != null &&
+                                  _userProfileImageUrl!.isNotEmpty
+                              ? NetworkImage(_userProfileImageUrl!)
+                              : null,
+                          child:
+                              _userProfileImageUrl == null ||
+                                  _userProfileImageUrl!.isEmpty
+                              ? Text(
+                                  _userName?.isNotEmpty == true
+                                      ? _userName![0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : null,
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -721,7 +731,10 @@ class _ContributionPageState extends State<ContributionPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: remaining > 0
-                      ? [Colors.orange[400]!, Colors.orange[600]!]
+                      ? [
+                          const Color.fromARGB(255, 114, 116, 224),
+                          const Color.fromARGB(255, 79, 93, 203),
+                        ]
                       : [Colors.green[400]!, Colors.green[600]!],
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -859,7 +872,7 @@ class _ContributionPageState extends State<ContributionPage> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
