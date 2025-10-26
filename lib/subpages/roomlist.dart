@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roommate/subpages/menubar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:roommate/subpages/editroom.dart';
@@ -16,16 +17,8 @@ class _RoomListPageState extends State<RoomListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'My Rooms',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 0, 107, 194),
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: const MenuAppBar(title: 'My Rooms'),
+      drawer: const MenuDrawer(),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('rooms').snapshots(),
         builder: (context, snapshot) {

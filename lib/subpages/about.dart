@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roommate/subpages/menubar.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -7,22 +8,8 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'About Us',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-            letterSpacing: -0.5,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Color(0xFF006BC2), // App theme color (blue shade 700)
-        foregroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      appBar: const MenuAppBar(title: 'About Us'),
+      drawer: const MenuDrawer(),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roommate/subpages/menubar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,7 +13,6 @@ class SOSPage extends StatefulWidget {
 
 class _SOSPageState extends State<SOSPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   String? _selectedRoomId;
   Map<String, dynamic>? _selectedRoomData;
   bool _isLoading = false;
@@ -227,16 +227,8 @@ class _SOSPageState extends State<SOSPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Emergency SOS',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.red[700],
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: const MenuAppBar(title: 'Emergency SOS', backgroundColor: Color.fromARGB(255, 206, 53, 42)),
+      drawer: const MenuDrawer(),
       body: Column(
         children: [
           // Room Selection Header

@@ -17,11 +17,13 @@ import 'package:roommate/subpages/about.dart';
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showMenuButton;
+  final Color? backgroundColor;
 
   const MenuAppBar({
     super.key,
     required this.title,
     this.showMenuButton = true,
+    this.backgroundColor,
   });
 
   @override
@@ -30,7 +32,7 @@ class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       title: Text(title),
-      backgroundColor: Colors.blue[700],
+      backgroundColor: backgroundColor ?? Colors.blue[700],
       foregroundColor: Colors.white,
       elevation: 0,
       automaticallyImplyLeading: false,
@@ -324,7 +326,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
                               _buildSubMenuItem(
                                 context,
                                 icon: Icons.people_outline,
-                                title: 'Others Contribution',
+                                title: 'Roommate Contribution',
                                 onTap: () {
                                   Navigator.pop(context);
                                   Navigator.push(
@@ -423,7 +425,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
                           _buildModernMenuItem(
                             context,
                             icon: Icons.emergency,
-                            title: 'Emergency SOS',
+                            title: 'SOS',
                             textColor: Colors.red[300],
                             iconColor: Colors.red[300],
                             onTap: () {
@@ -439,7 +441,7 @@ class _MenuDrawerState extends State<MenuDrawer> {
                           _buildModernMenuItem(
                             context,
                             icon: Icons.info_outline,
-                            title: 'About Us',
+                            title: 'About',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.push(
@@ -505,12 +507,14 @@ class _MenuDrawerState extends State<MenuDrawer> {
               children: [
                 Icon(icon, color: iconColor ?? Colors.white, size: 24),
                 const SizedBox(width: 16),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: textColor ?? Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: textColor ?? Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -606,12 +610,14 @@ class _MenuDrawerState extends State<MenuDrawer> {
               children: [
                 Icon(icon, color: Colors.white70, size: 20),
                 const SizedBox(width: 16),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ],

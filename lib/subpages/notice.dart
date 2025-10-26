@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roommate/subpages/menubar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -221,16 +222,8 @@ class _NoticePageState extends State<NoticePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Send Notice',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 0, 107, 194),
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: const MenuAppBar(title: 'Send Notice'),
+      drawer: const MenuDrawer(),
       body: Column(
         children: [
           // Room Selection Dropdown
