@@ -177,14 +177,27 @@ class _RoomListPageState extends State<RoomListPage> {
                     ],
                   ),
                 ),
-                if (isCreator)
-                  IconButton(
-                    onPressed: () =>
-                        _showEditOptions(context, roomId, roomData),
-                    icon: const Icon(Icons.edit),
-                    color: Theme.of(context).colorScheme.primary,
-                    tooltip: 'Edit Room',
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isCreator)
+                      IconButton(
+                        onPressed: () =>
+                            _showEditOptions(context, roomId, roomData),
+                        icon: const Icon(Icons.edit),
+                        color: Theme.of(context).colorScheme.primary,
+                        tooltip: 'Edit Room',
+                      ),
+                    if (!isCreator)
+                      IconButton(
+                        onPressed: () =>
+                            _confirmLeaveRoom(context, roomId, roomName),
+                        icon: const Icon(Icons.exit_to_app),
+                        color: Colors.red,
+                        tooltip: 'Leave Room',
+                      ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -551,6 +564,86 @@ class _RoomListPageState extends State<RoomListPage> {
         builder: (context) => EditRoomPage(roomId: roomId, roomData: roomData),
       ),
     );
+  }
+
+  void _confirmLeaveRoom(BuildContext context, String roomId, String roomName) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Leave Room'),
+          content: Text(
+            'Are you sure you want to leave "$roomName"? You will no longer have access to this room.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _leaveRoom(context, roomId);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Leave'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _leaveRoom(BuildContext context, String roomId) async {
+    try {
+      final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
+
+      if (roomDoc.exists) {
+        final roomData = roomDoc.data() as Map<String, dynamic>;
+        final users = List<Map<String, dynamic>>.from(roomData['users'] ?? []);
+
+        // Remove current user from the users list
+        users.removeWhere((user) => user['gmail'] == currentUserEmail);
+
+        // Update the room with the new users list
+        await _firestore.collection('rooms').doc(roomId).update({
+          'users': users,
+        });
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('You have left the room'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Error: $e'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _confirmDelete(BuildContext context, String roomId, String roomName) {

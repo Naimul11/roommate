@@ -6,6 +6,8 @@ import 'package:roommate/update_profile.dart';
 import 'package:roommate/subpages/notifications.dart';
 import 'package:roommate/subpages/createroom.dart';
 import 'package:roommate/subpages/roomlist.dart';
+import 'package:roommate/subpages/contribution.dart';
+import 'package:roommate/subpages/roommate_contri.dart';
 
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -294,6 +296,36 @@ class _MenuDrawerState extends State<MenuDrawer> {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           const RoomListPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _buildSubMenuItem(
+                                context,
+                                icon: Icons.payment,
+                                title: 'My Contributions',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ContributionPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _buildSubMenuItem(
+                                context,
+                                icon: Icons.people_outline,
+                                title: 'Others Contributions',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const RoommateContributionPage(),
                                     ),
                                   );
                                 },
