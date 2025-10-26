@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:roommate/subpages/menubar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WorkSchedulePage extends StatefulWidget {
   const WorkSchedulePage({super.key});
@@ -21,6 +22,36 @@ class _WorkSchedulePageState extends State<WorkSchedulePage> {
   void initState() {
     super.initState();
     _loadCurrentUserName();
+    _loadSelectedRoom();
+  }
+
+  Future<void> _loadSelectedRoom() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedRoomId = prefs.getString('work_schedule_selected_room');
+    if (savedRoomId != null && mounted) {
+      // Load the room data
+      try {
+        final roomDoc = await _firestore.collection('rooms').doc(savedRoomId).get();
+        if (roomDoc.exists && mounted) {
+          setState(() {
+            _selectedRoomId = savedRoomId;
+            _selectedRoomData = roomDoc.data();
+          });
+        }
+      } catch (e) {
+        // Room doesn't exist anymore, clear saved preference
+        await prefs.remove('work_schedule_selected_room');
+      }
+    }
+  }
+
+  Future<void> _saveSelectedRoom(String? roomId) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (roomId != null) {
+      await prefs.setString('work_schedule_selected_room', roomId);
+    } else {
+      await prefs.remove('work_schedule_selected_room');
+    }
   }
 
   void _loadCurrentUserName() async {
@@ -242,6 +273,7 @@ class _WorkSchedulePageState extends State<WorkSchedulePage> {
                       selectedRoom.data() as Map<String, dynamic>;
                 }
               });
+              _saveSelectedRoom(value);
             },
           ),
         );

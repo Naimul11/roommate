@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:roommate/subpages/menubar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RoommateContributionPage extends StatefulWidget {
   const RoommateContributionPage({super.key});
@@ -16,6 +17,41 @@ class _RoommateContributionPageState extends State<RoommateContributionPage> {
 
   String? _selectedRoomId;
   Map<String, dynamic>? _selectedRoomData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedRoom();
+  }
+
+  Future<void> _loadSelectedRoom() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedRoomId = prefs.getString('roommate_contri_selected_room');
+    if (savedRoomId != null && mounted) {
+      // Load the room data
+      try {
+        final roomDoc = await _firestore.collection('rooms').doc(savedRoomId).get();
+        if (roomDoc.exists && mounted) {
+          setState(() {
+            _selectedRoomId = savedRoomId;
+            _selectedRoomData = roomDoc.data();
+          });
+        }
+      } catch (e) {
+        // Room doesn't exist anymore, clear saved preference
+        await prefs.remove('roommate_contri_selected_room');
+      }
+    }
+  }
+
+  Future<void> _saveSelectedRoom(String? roomId) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (roomId != null) {
+      await prefs.setString('roommate_contri_selected_room', roomId);
+    } else {
+      await prefs.remove('roommate_contri_selected_room');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,6 +169,7 @@ class _RoommateContributionPageState extends State<RoommateContributionPage> {
                       selectedRoom.data() as Map<String, dynamic>;
                 }
               });
+              _saveSelectedRoom(value);
             },
           ),
         );
