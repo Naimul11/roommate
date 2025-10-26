@@ -50,5 +50,13 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="mailto"/>
         </intent>
+        <!-- Required to make phone calls -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
     </queries>
 </manifest>

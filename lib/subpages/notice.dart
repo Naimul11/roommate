@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 class NoticePage extends StatefulWidget {
   const NoticePage({super.key});
@@ -22,14 +23,29 @@ class _NoticePageState extends State<NoticePage> {
   final Set<String> _selectedMembers = {};
   bool _isLoading = false;
 
-  Future<void> _sendEmailToRecipients(List<String> recipients, String message) async {
+  Future<void> _sendEmailToRecipients(
+    List<String> recipients, 
+    String message, 
+    String roomName,
+    DateTime? selectedTime,
+  ) async {
     if (recipients.isEmpty) return;
     
     try {
       // Create mailto URL with all recipients in BCC
       final String bccRecipients = recipients.join(',');
-      final String subject = Uri.encodeComponent('Roommate Notice');
-      final String body = Uri.encodeComponent(message);
+      
+      // Add room name to subject
+      final String subject = Uri.encodeComponent('($roomName) Roommate Notice');
+      
+      // Add time to the end of message if provided
+      String fullMessage = message;
+      if (selectedTime != null) {
+        final timeString = DateFormat('h:mm a').format(selectedTime);
+        fullMessage = '$message\n\nTime: $timeString';
+      }
+      
+      final String body = Uri.encodeComponent(fullMessage);
       
       final String mailtoUrl = 'mailto:?subject=$subject&bcc=$bccRecipients&body=$body';
       final Uri emailUri = Uri.parse(mailtoUrl);
@@ -125,12 +141,13 @@ class _NoticePageState extends State<NoticePage> {
 
       // Send emails to recipients
       final message = _messageController.text.trim();
+      final roomName = _selectedRoomData?['roomName'] ?? 'Room';
       
       if (recipients.isEmpty) {
         throw Exception('No recipients found');
       }
       
-      await _sendEmailToRecipients(recipients, message);
+      await _sendEmailToRecipients(recipients, message, roomName, _selectedTime);
 
       if (mounted) {
         _messageController.clear();
@@ -362,7 +379,7 @@ class _NoticePageState extends State<NoticePage> {
                             }
                           });
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
+                        activeThumbColor: Theme.of(context).colorScheme.primary,
                       ),
                     ),
 

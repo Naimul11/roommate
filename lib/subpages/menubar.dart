@@ -11,6 +11,8 @@ import 'package:roommate/subpages/roommate_contri.dart';
 import 'package:roommate/subpages/create_work.dart';
 import 'package:roommate/subpages/work_schedule.dart';
 import 'package:roommate/subpages/notice.dart';
+import 'package:roommate/subpages/sos.dart';
+import 'package:roommate/subpages/about.dart';
 
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -261,20 +263,6 @@ class _MenuDrawerState extends State<MenuDrawer> {
                               );
                             },
                           ),
-                          _buildModernMenuItem(
-                            context,
-                            icon: Icons.announcement,
-                            title: 'Notice',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const NoticePage(),
-                                ),
-                              );
-                            },
-                          ),
                           // Room Management with submenu
                           _buildExpandableMenuItem(
                             context,
@@ -417,6 +405,50 @@ class _MenuDrawerState extends State<MenuDrawer> {
                                 },
                               ),
                             ],
+                          ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.announcement,
+                            title: 'Notice',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NoticePage(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.emergency,
+                            title: 'Emergency SOS',
+                            textColor: Colors.red[300],
+                            iconColor: Colors.red[300],
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SOSPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.info_outline,
+                            title: 'About Us',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AboutPage(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
