@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -223,20 +224,21 @@ class RoomDetailsPage extends StatelessWidget {
                   // Location & Floor Details
                   _buildSectionTitle('Location Details'),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Floor', postData['floor']?.toString() ?? 'N/A'),
+                  _buildDetailRow('Floor', postData['floor']?.toString() ?? 'N/A', context),
 
                   const SizedBox(height: 24),
 
                   // Room Details
                   _buildSectionTitle('Room Information'),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Room Type', postData['roomType'] ?? 'N/A'),
+                  _buildDetailRow('Room Type', postData['roomType'] ?? 'N/A', context),
                   if (postData['roomType'] == 'Shared')
                     _buildDetailRow(
                       'Number of Roommates',
                       postData['numberOfRoommates']?.toString() ?? 'N/A',
+                      context,
                     ),
-                  _buildDetailRow('Facilities', postData['facilities'] ?? 'N/A'),
+                  _buildDetailRow('Facilities', postData['facilities'] ?? 'N/A', context),
 
                   const SizedBox(height: 24),
 
@@ -259,12 +261,12 @@ class RoomDetailsPage extends StatelessWidget {
                   // Preferences
                   _buildSectionTitle('Preferences'),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Gender', postData['gender'] ?? 'N/A'),
-                  _buildDetailRow('Preferred Religion', postData['preferredReligion'] ?? 'N/A'),
-                  _buildDetailRow('Smoker', postData['smoker'] ?? 'N/A'),
-                  _buildDetailRow('Pet Lover', postData['petLover'] ?? 'N/A'),
-                  _buildDetailRow('Cleanliness', postData['cleanliness'] ?? 'N/A'),
-                  _buildDetailRow('Age Range', postData['ageRange'] ?? 'N/A'),
+                  _buildDetailRow('Gender', postData['gender'] ?? 'N/A', context),
+                  _buildDetailRow('Preferred Religion', postData['preferredReligion'] ?? 'N/A', context),
+                  _buildDetailRow('Smoker', postData['smoker'] ?? 'N/A', context),
+                  _buildDetailRow('Pet Lover', postData['petLover'] ?? 'N/A', context),
+                  _buildDetailRow('Cleanliness', postData['cleanliness'] ?? 'N/A', context),
+                  _buildDetailRow('Age Range', postData['ageRange'] ?? 'N/A', context),
 
                   const SizedBox(height: 24),
 
@@ -346,9 +348,9 @@ class RoomDetailsPage extends StatelessWidget {
                                       ],
                                     ),
                                     const SizedBox(height: 16),
-                                    _buildDetailRow('Email', posterEmail.isEmpty ? 'N/A' : posterEmail),
-                                    _buildDetailRow('Phone', approvalData['posterPhone'] ?? 'N/A'),
-                                    _buildDetailRow('WhatsApp', approvalData['posterWhatsapp'] ?? 'N/A'),
+                                    _buildDetailRow('Email', posterEmail.isEmpty ? 'N/A' : posterEmail, context),
+                                    _buildDetailRow('Phone', approvalData['posterPhone'] ?? 'N/A', context),
+                                    _buildDetailRow('WhatsApp', approvalData['posterWhatsapp'] ?? 'N/A', context),
                                     const SizedBox(height: 16),
                                     SizedBox(
                                       width: double.infinity,
@@ -549,7 +551,10 @@ class RoomDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, BuildContext context) {
+    final isPhone = label == 'Phone' && value != 'N/A';
+    final isWhatsApp = label == 'WhatsApp' && value != 'N/A';
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -567,14 +572,46 @@ class RoomDetailsPage extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
+            child: (isPhone || isWhatsApp)
+                ? InkWell(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: value));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('$label copied to clipboard'),
+                          duration: const Duration(seconds: 1),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            value,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.copy,
+                          size: 16,
+                          color: Colors.blue.shade700,
+                        ),
+                      ],
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
           ),
         ],
       ),
