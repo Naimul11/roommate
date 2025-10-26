@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class NoticePage extends StatefulWidget {
   const NoticePage({super.key});
@@ -21,38 +20,6 @@ class _NoticePageState extends State<NoticePage> {
   bool _sendToAll = true;
   final Set<String> _selectedMembers = {};
   bool _isLoading = false;
-
-  Future<void> _sendEmailToRecipients(List<String> recipients, String message) async {
-    if (recipients.isEmpty) return;
-    
-    try {
-      // Create mailto URL with all recipients in BCC
-      final String bccRecipients = recipients.join(',');
-      final String subject = Uri.encodeComponent('Roommate Notice');
-      final String body = Uri.encodeComponent(message);
-      
-      final String mailtoUrl = 'mailto:?subject=$subject&bcc=$bccRecipients&body=$body';
-      final Uri emailUri = Uri.parse(mailtoUrl);
-      
-      // Try to launch directly without checking canLaunchUrl
-      // as it can be unreliable on some platforms
-      final bool launched = await launchUrl(
-        emailUri,
-        mode: LaunchMode.externalApplication,
-      );
-      
-      if (!launched) {
-        throw Exception('Failed to open email app. Please check if Gmail or another email app is installed.');
-      }
-    } catch (e) {
-      // If the error contains 'No Activity found', it means no email app is configured
-      if (e.toString().contains('No Activity found') || 
-          e.toString().contains('ACTIVITY_NOT_FOUND')) {
-        throw Exception('No email app configured. Please set up Gmail or another email app.');
-      }
-      rethrow;
-    }
-  }
 
   Future<void> _selectTime() async {
     final TimeOfDay? picked = await showTimePicker(
@@ -123,14 +90,7 @@ class _NoticePageState extends State<NoticePage> {
         recipients = _selectedMembers.toList();
       }
 
-      // Send emails to recipients
-      final message = _messageController.text.trim();
-      
-      if (recipients.isEmpty) {
-        throw Exception('No recipients found');
-      }
-      
-      await _sendEmailToRecipients(recipients, message);
+      // Notification creation removed
 
       if (mounted) {
         _messageController.clear();
@@ -156,31 +116,9 @@ class _NoticePageState extends State<NoticePage> {
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = 'Failed to open email app';
-        
-        final errorString = e.toString().toLowerCase();
-        
-        if (errorString.contains('no email app') || 
-            errorString.contains('no activity found') ||
-            errorString.contains('activity_not_found')) {
-          errorMessage = 'Please open Gmail and set it as default email app in your phone settings';
-        } else if (errorString.contains('no recipients')) {
-          errorMessage = 'No recipients found';
-        } else if (errorString.contains('not authenticated')) {
-          errorMessage = 'You must be logged in';
-        } else if (errorString.contains('failed to open')) {
-          errorMessage = 'Could not open email app. Try opening Gmail manually first.';
-        }
-        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(child: Text(errorMessage)),
-              ],
-            ),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -362,7 +300,7 @@ class _NoticePageState extends State<NoticePage> {
                             }
                           });
                         },
-                        activeColor: Theme.of(context).colorScheme.primary,
+                        activeThumbColor: Theme.of(context).colorScheme.primary,
                       ),
                     ),
 

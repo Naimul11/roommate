@@ -10,6 +10,7 @@ import 'package:roommate/subpages/contribution.dart';
 import 'package:roommate/subpages/roommate_contri.dart';
 import 'package:roommate/subpages/create_work.dart';
 import 'package:roommate/subpages/work_schedule.dart';
+import 'package:roommate/subpages/notice.dart';
 
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -257,6 +258,20 @@ class _MenuDrawerState extends State<MenuDrawer> {
                               Navigator.pushReplacementNamed(
                                 context,
                                 '/findroom',
+                              );
+                            },
+                          ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.announcement,
+                            title: 'Notice',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NoticePage(),
+                                ),
                               );
                             },
                           ),
