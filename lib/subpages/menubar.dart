@@ -8,6 +8,8 @@ import 'package:roommate/subpages/createroom.dart';
 import 'package:roommate/subpages/roomlist.dart';
 import 'package:roommate/subpages/contribution.dart';
 import 'package:roommate/subpages/roommate_contri.dart';
+import 'package:roommate/subpages/create_work.dart';
+import 'package:roommate/subpages/work_schedule.dart';
 
 class MenuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -113,6 +115,7 @@ class MenuDrawer extends StatefulWidget {
 
 class _MenuDrawerState extends State<MenuDrawer> {
   bool _isRoomManagementExpanded = false;
+  bool _isWorkManagementExpanded = false;
 
   bool _isProfilePage(BuildContext context) {
     // Check if current route is ProfilePage
@@ -327,6 +330,74 @@ class _MenuDrawerState extends State<MenuDrawer> {
                                       builder: (context) =>
                                           const RoommateContributionPage(),
                                     ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          // Work Management with submenu
+                          _buildExpandableMenuItem(
+                            context,
+                            icon: Icons.assignment,
+                            title: 'Work Management',
+                            isExpanded: _isWorkManagementExpanded,
+                            onTap: () {
+                              setState(() {
+                                _isWorkManagementExpanded =
+                                    !_isWorkManagementExpanded;
+                              });
+                            },
+                            children: [
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('rooms')
+                                    .where(
+                                      'creatorEmail',
+                                      isEqualTo: FirebaseAuth
+                                          .instance
+                                          .currentUser
+                                          ?.email,
+                                    )
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  final hasCreatedRooms =
+                                      snapshot.hasData &&
+                                      snapshot.data!.docs.isNotEmpty;
+
+                                  return Column(
+                                    children: [
+                                      if (hasCreatedRooms)
+                                        _buildSubMenuItem(
+                                          context,
+                                          icon: Icons.add_task,
+                                          title: 'Create Work',
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const CreateWorkPage(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      _buildSubMenuItem(
+                                        context,
+                                        icon: Icons.schedule,
+                                        title: 'Work Schedule',
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const WorkSchedulePage(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   );
                                 },
                               ),
