@@ -243,18 +243,6 @@ class _MenuDrawerState extends State<MenuDrawer> {
                             ),
                           _buildModernMenuItem(
                             context,
-                            icon: Icons.search,
-                            title: 'Find Roommate',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/findroommate',
-                              );
-                            },
-                          ),
-                          _buildModernMenuItem(
-                            context,
                             icon: Icons.hotel,
                             title: 'Find Room',
                             onTap: () {
@@ -262,6 +250,18 @@ class _MenuDrawerState extends State<MenuDrawer> {
                               Navigator.pushReplacementNamed(
                                 context,
                                 '/findroom',
+                              );
+                            },
+                          ),
+                          _buildModernMenuItem(
+                            context,
+                            icon: Icons.search,
+                            title: 'Find Roommate',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(
+                                context,
+                                '/findroommate',
                               );
                             },
                           ),
@@ -563,11 +563,6 @@ class _MenuDrawerState extends State<MenuDrawer> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    Icon(
-                      isExpanded ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.white,
-                      size: 24,
                     ),
                   ],
                 ),

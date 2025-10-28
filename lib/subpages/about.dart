@@ -71,10 +71,13 @@ class AboutPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.home_work_rounded,
-                      size: 72,
-                      color: Colors.blue.shade700,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/room.png',
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -256,8 +259,8 @@ class AboutPage extends StatelessWidget {
                       ),
                       _buildFeatureCard(
                         icon: Icons.assignment_rounded,
-                        title: 'Work Management',
-                        description: 'Assign household responsibilities',
+                        title: 'Assign Chores',
+                        description: 'Assign and track chores',
                         color: Colors.red.shade700,
                       ),
                       _buildFeatureCard(
@@ -360,12 +363,17 @@ class AboutPage extends StatelessWidget {
                     runSpacing: 16,
                     children: [
                       _buildTeamMemberCard(
-                        'Fahim',
+                        'Fahim Mustakim',
                         Colors.blue.shade700,
                         imageUrl:
-                            'https://ik.imagekit.io/naimul/fahim.jpg?updatedAt=1761511061767',
+                            'https://ik.imagekit.io/naimul/fahim.jpg?updatedAt=1761660112084',
                       ),
-                      _buildTeamMemberCard('Zuyel Rana', Colors.green.shade700),
+                      _buildTeamMemberCard(
+                        'Zuyel Rana',
+                        Colors.green.shade700,
+                        imageUrl:
+                            'https://ik.imagekit.io/naimul/zuyel.jpg?updatedAt=1761660111886',
+                      ),
                       _buildTeamMemberCard(
                         'Ahmed Tamim',
                         Colors.orange.shade700,
@@ -375,8 +383,15 @@ class AboutPage extends StatelessWidget {
                       _buildTeamMemberCard(
                         'Shadman Sumon',
                         Colors.purple.shade700,
+                        imageUrl:
+                            'https://ik.imagekit.io/naimul/sumon.jpg?updatedAt=1761660112976',
                       ),
-                      _buildTeamMemberCard('Mejbaul Alam', Colors.red.shade700),
+                      _buildTeamMemberCard(
+                        'Mejbaul Alam',
+                        Colors.red.shade700,
+                        imageUrl:
+                            'https://ik.imagekit.io/naimul/mezbah.jpg?updatedAt=1761660111772',
+                      ),
                     ],
                   ),
                 ],
@@ -402,10 +417,14 @@ class AboutPage extends StatelessWidget {
                       color: Colors.white.withAlpha((0.1 * 255).toInt()),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(
-                      Icons.home_work_rounded,
-                      size: 40,
-                      color: Colors.white,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        'assets/room.png',
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -550,16 +569,16 @@ class AboutPage extends StatelessWidget {
 
   Widget _buildTeamMemberCard(String name, Color color, {String? imageUrl}) {
     return Container(
-      width: 165,
+      width: 140,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(20),
-            blurRadius: 15,
+            blurRadius: 12,
             spreadRadius: 0,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 3),
           ),
         ],
         border: Border.all(color: Colors.grey.shade200, width: 1),
@@ -570,19 +589,19 @@ class AboutPage extends StatelessWidget {
           imageUrl != null
               ? ClipRRect(
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
                   child: Image.network(
                     imageUrl,
                     width: double.infinity,
-                    height: 120,
+                    height: 100,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       // Fallback to colored header with initial
                       return Container(
                         width: double.infinity,
-                        height: 120,
+                        height: 100,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -590,28 +609,28 @@ class AboutPage extends StatelessWidget {
                             colors: [color, color.withAlpha(204)],
                           ),
                           borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
                           ),
                         ),
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withAlpha(38),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
                             child: Text(
                               name[0].toUpperCase(),
                               style: TextStyle(
-                                fontSize: 28,
+                                fontSize: 24,
                                 fontWeight: FontWeight.w900,
                                 color: color,
                               ),
@@ -625,8 +644,8 @@ class AboutPage extends StatelessWidget {
               : Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    vertical: 24,
-                    horizontal: 16,
+                    vertical: 20,
+                    horizontal: 12,
                   ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -635,28 +654,28 @@ class AboutPage extends StatelessWidget {
                       colors: [color, color.withAlpha(204)],
                     ),
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
                   ),
                   child: Center(
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withAlpha(38),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
                       child: Text(
                         name[0].toUpperCase(),
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.w900,
                           color: color,
                         ),
@@ -666,13 +685,13 @@ class AboutPage extends StatelessWidget {
                 ),
           // White content section
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               children: [
                 Text(
                   name,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87,
                     letterSpacing: -0.3,
@@ -680,28 +699,28 @@ class AboutPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: 10,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.code, size: 14, color: Colors.grey.shade700),
-                      const SizedBox(width: 4),
+                      Icon(Icons.code, size: 12, color: Colors.grey.shade700),
+                      const SizedBox(width: 3),
                       Text(
                         'Developer',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
                           color: Colors.grey.shade700,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],

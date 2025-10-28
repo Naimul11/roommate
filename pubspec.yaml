@@ -30,6 +30,7 @@ dev_dependencies:
 
  
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.1
 
 
 flutter:
@@ -40,3 +41,10 @@ flutter:
   assets:
     - assets/google_icon.png
     - assets/room.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/room.png"
+  adaptive_icon_background: "#006BC2"
+  adaptive_icon_foreground: "assets/room.png"
