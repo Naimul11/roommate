@@ -56,7 +56,7 @@ class RoomDetailsPage extends StatelessWidget {
           .collection('reports')
           .doc(email)
           .get();
-      
+
       if (reportDoc.exists) {
         return reportDoc.data()?['reportCount'] ?? 0;
       }
@@ -180,7 +180,23 @@ class RoomDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = postData['location'] ?? 'Unknown location';
+    final division = postData['division'] ?? '';
+    final district = postData['district'] ?? '';
+    final address = postData['address'] ?? '';
     final userId = postData['userId'] ?? '';
+
+    // Build location display
+    String locationDisplay = '';
+    if (division.isNotEmpty && district.isNotEmpty) {
+      locationDisplay = '$district, $division';
+      if (address.isNotEmpty) {
+        locationDisplay = '$address, $locationDisplay';
+      }
+    } else if (location.isNotEmpty) {
+      locationDisplay = location;
+    } else {
+      locationDisplay = 'Unknown location';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -205,11 +221,15 @@ class RoomDetailsPage extends StatelessWidget {
                   // Location Title
                   Row(
                     children: [
-                      Icon(Icons.location_on, color: Colors.blue.shade700, size: 28),
+                      Icon(
+                        Icons.location_on,
+                        color: Colors.blue.shade700,
+                        size: 28,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          location,
+                          locationDisplay,
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -224,21 +244,39 @@ class RoomDetailsPage extends StatelessWidget {
                   // Location & Floor Details
                   _buildSectionTitle('Location Details'),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Floor', postData['floor']?.toString() ?? 'N/A', context),
+                  if (division.isNotEmpty)
+                    _buildDetailRow('Division', division, context),
+                  if (district.isNotEmpty)
+                    _buildDetailRow('District', district, context),
+                  if (address.isNotEmpty)
+                    _buildDetailRow('Address', address, context),
+                  _buildDetailRow(
+                    'Floor',
+                    postData['floor']?.toString() ?? 'N/A',
+                    context,
+                  ),
 
                   const SizedBox(height: 24),
 
                   // Room Details
                   _buildSectionTitle('Room Information'),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Room Type', postData['roomType'] ?? 'N/A', context),
+                  _buildDetailRow(
+                    'Room Type',
+                    postData['roomType'] ?? 'N/A',
+                    context,
+                  ),
                   if (postData['roomType'] == 'Shared')
                     _buildDetailRow(
                       'Number of Roommates',
                       postData['numberOfRoommates']?.toString() ?? 'N/A',
                       context,
                     ),
-                  _buildDetailRow('Facilities', postData['facilities'] ?? 'N/A', context),
+                  _buildDetailRow(
+                    'Facilities',
+                    postData['facilities'] ?? 'N/A',
+                    context,
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -247,7 +285,10 @@ class RoomDetailsPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildCostRow('Rent', postData['rent']?.toDouble() ?? 0),
                   _buildCostRow('Food', postData['food']?.toDouble() ?? 0),
-                  _buildCostRow('Utilities', postData['utilities']?.toDouble() ?? 0),
+                  _buildCostRow(
+                    'Utilities',
+                    postData['utilities']?.toDouble() ?? 0,
+                  ),
                   const Divider(height: 24, thickness: 1),
                   _buildCostRow(
                     'Total Cost',
@@ -261,12 +302,36 @@ class RoomDetailsPage extends StatelessWidget {
                   // Preferences
                   _buildSectionTitle('Preferences'),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Gender', postData['gender'] ?? 'N/A', context),
-                  _buildDetailRow('Preferred Religion', postData['preferredReligion'] ?? 'N/A', context),
-                  _buildDetailRow('Smoker', postData['smoker'] ?? 'N/A', context),
-                  _buildDetailRow('Pet Lover', postData['petLover'] ?? 'N/A', context),
-                  _buildDetailRow('Cleanliness', postData['cleanliness'] ?? 'N/A', context),
-                  _buildDetailRow('Age Range', postData['ageRange'] ?? 'N/A', context),
+                  _buildDetailRow(
+                    'Gender',
+                    postData['gender'] ?? 'N/A',
+                    context,
+                  ),
+                  _buildDetailRow(
+                    'Preferred Religion',
+                    postData['preferredReligion'] ?? 'N/A',
+                    context,
+                  ),
+                  _buildDetailRow(
+                    'Smoker',
+                    postData['smoker'] ?? 'N/A',
+                    context,
+                  ),
+                  _buildDetailRow(
+                    'Pet Lover',
+                    postData['petLover'] ?? 'N/A',
+                    context,
+                  ),
+                  _buildDetailRow(
+                    'Cleanliness',
+                    postData['cleanliness'] ?? 'N/A',
+                    context,
+                  ),
+                  _buildDetailRow(
+                    'Age Range',
+                    postData['ageRange'] ?? 'N/A',
+                    context,
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -274,18 +339,25 @@ class RoomDetailsPage extends StatelessWidget {
                   if (postData['createdAt'] != null) ...[
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Posted: ${DateFormat('MMM d, y \'at\' h:mm a').format((postData['createdAt'] as Timestamp).toDate())}',
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                   ],
-                  // Removed updated time
 
+                  // Removed updated time
                   const SizedBox(height: 32),
 
                   // Contact Button
@@ -293,19 +365,22 @@ class RoomDetailsPage extends StatelessWidget {
                     future: _checkApprovedRequest(userId),
                     builder: (context, approvalSnapshot) {
                       // Check if there's an approved request
-                      if (approvalSnapshot.hasData && 
-                          approvalSnapshot.data != null && 
+                      if (approvalSnapshot.hasData &&
+                          approvalSnapshot.data != null &&
                           approvalSnapshot.data!.exists) {
-                        final approvalData = approvalSnapshot.data!.data() as Map<String, dynamic>;
+                        final approvalData =
+                            approvalSnapshot.data!.data()
+                                as Map<String, dynamic>;
                         final posterEmail = approvalData['posterEmail'] ?? '';
-                        final posterName = approvalData['posterName'] ?? 'Unknown';
-                        
+                        final posterName =
+                            approvalData['posterName'] ?? 'Unknown';
+
                         // Show contact info if approved
                         return FutureBuilder<int>(
                           future: _getReportCount(posterEmail),
                           builder: (context, reportSnapshot) {
                             final reportCount = reportSnapshot.data ?? 0;
-                            
+
                             return Card(
                               color: Colors.green.shade50,
                               child: Padding(
@@ -315,7 +390,10 @@ class RoomDetailsPage extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.check_circle, color: Colors.green.shade700),
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green.shade700,
+                                        ),
                                         const SizedBox(width: 8),
                                         const Expanded(
                                           child: Text(
@@ -328,12 +406,20 @@ class RoomDetailsPage extends StatelessWidget {
                                         ),
                                         if (reportCount > 0)
                                           GestureDetector(
-                                            onTap: () => _showReportsDialog(context, posterEmail),
+                                            onTap: () => _showReportsDialog(
+                                              context,
+                                              posterEmail,
+                                            ),
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.red.shade100,
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
                                               child: Text(
                                                 'Reported ${reportCount}x',
@@ -348,37 +434,61 @@ class RoomDetailsPage extends StatelessWidget {
                                       ],
                                     ),
                                     const SizedBox(height: 16),
-                                    _buildDetailRow('Email', posterEmail.isEmpty ? 'N/A' : posterEmail, context),
-                                    _buildDetailRow('Phone', approvalData['posterPhone'] ?? 'N/A', context),
-                                    _buildDetailRow('WhatsApp', approvalData['posterWhatsapp'] ?? 'N/A', context),
+                                    _buildDetailRow(
+                                      'Email',
+                                      posterEmail.isEmpty ? 'N/A' : posterEmail,
+                                      context,
+                                    ),
+                                    _buildDetailRow(
+                                      'Phone',
+                                      approvalData['posterPhone'] ?? 'N/A',
+                                      context,
+                                    ),
+                                    _buildDetailRow(
+                                      'WhatsApp',
+                                      approvalData['posterWhatsapp'] ?? 'N/A',
+                                      context,
+                                    ),
                                     const SizedBox(height: 16),
                                     SizedBox(
                                       width: double.infinity,
                                       child: OutlinedButton.icon(
                                         onPressed: () async {
-                                          final result = await Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) => ReportPage(
-                                                contactEmail: posterEmail,
-                                                contactName: posterName,
-                                              ),
-                                            ),
-                                          );
+                                          final result =
+                                              await Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder: (_) => ReportPage(
+                                                    contactEmail: posterEmail,
+                                                    contactName: posterName,
+                                                  ),
+                                                ),
+                                              );
                                           // Refresh if report was submitted
-                                          if (result == true && context.mounted) {
+                                          if (result == true &&
+                                              context.mounted) {
                                             // Force rebuild by calling setState in parent
-                                            (context as Element).markNeedsBuild();
+                                            (context as Element)
+                                                .markNeedsBuild();
                                           }
                                         },
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: Colors.red.shade700,
-                                          side: BorderSide(color: Colors.red.shade700),
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          side: BorderSide(
+                                            color: Colors.red.shade700,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                         ),
-                                        icon: const Icon(Icons.report, size: 20),
+                                        icon: const Icon(
+                                          Icons.report,
+                                          size: 20,
+                                        ),
                                         label: const Text(
                                           'Report This Contact',
                                           style: TextStyle(
@@ -403,11 +513,14 @@ class RoomDetailsPage extends StatelessWidget {
                           return SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: () => _showContactDialog(context, snapshot.data),
+                              onPressed: () =>
+                                  _showContactDialog(context, snapshot.data),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue.shade700,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -440,13 +553,16 @@ class RoomDetailsPage extends StatelessWidget {
 
   Widget _buildImagesSection() {
     final images = <String>[];
-    if (postData['mainRoomImageUrl'] != null && postData['mainRoomImageUrl'].toString().isNotEmpty) {
+    if (postData['mainRoomImageUrl'] != null &&
+        postData['mainRoomImageUrl'].toString().isNotEmpty) {
       images.add(postData['mainRoomImageUrl']);
     }
-    if (postData['mainSpotImageUrl'] != null && postData['mainSpotImageUrl'].toString().isNotEmpty) {
+    if (postData['mainSpotImageUrl'] != null &&
+        postData['mainSpotImageUrl'].toString().isNotEmpty) {
       images.add(postData['mainSpotImageUrl']);
     }
-    if (postData['differentAngleImageUrl'] != null && postData['differentAngleImageUrl'].toString().isNotEmpty) {
+    if (postData['differentAngleImageUrl'] != null &&
+        postData['differentAngleImageUrl'].toString().isNotEmpty) {
       images.add(postData['differentAngleImageUrl']);
     }
 
@@ -455,11 +571,7 @@ class RoomDetailsPage extends StatelessWidget {
         height: 250,
         color: Colors.grey.shade300,
         child: Center(
-          child: Icon(
-            Icons.home,
-            size: 80,
-            color: Colors.grey.shade600,
-          ),
+          child: Icon(Icons.home, size: 80, color: Colors.grey.shade600),
         ),
       );
     }
@@ -505,7 +617,7 @@ class RoomDetailsPage extends StatelessWidget {
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                         ),
                       ),
@@ -520,7 +632,10 @@ class RoomDetailsPage extends StatelessWidget {
               bottom: 12,
               right: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(153),
                   borderRadius: BorderRadius.circular(20),
@@ -554,7 +669,7 @@ class RoomDetailsPage extends StatelessWidget {
   Widget _buildDetailRow(String label, String value, BuildContext context) {
     final isPhone = label == 'Phone' && value != 'N/A';
     final isWhatsApp = label == 'WhatsApp' && value != 'N/A';
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -591,16 +706,12 @@ class RoomDetailsPage extends StatelessWidget {
                             value,
                             style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.w600
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(
-                          Icons.copy,
-                          size: 16,
-                          color: Colors.blue.shade700,
-                        ),
+                        Icon(Icons.copy, size: 16, color: Colors.blue.shade700),
                       ],
                     ),
                   )
@@ -618,7 +729,12 @@ class RoomDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCostRow(String label, double amount, {bool isBold = false, bool isTotal = false}) {
+  Widget _buildCostRow(
+    String label,
+    double amount, {
+    bool isBold = false,
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -650,9 +766,12 @@ class RoomDetailsPage extends StatelessWidget {
     );
   }
 
-  void _showContactDialog(BuildContext context, Map<String, dynamic>? userData) async {
+  void _showContactDialog(
+    BuildContext context,
+    Map<String, dynamic>? userData,
+  ) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -664,7 +783,7 @@ class RoomDetailsPage extends StatelessWidget {
     }
 
     final posterId = postData['userId'] ?? '';
-    
+
     if (posterId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -692,7 +811,7 @@ class RoomDetailsPage extends StatelessWidget {
           .collection('users')
           .doc(currentUser.uid)
           .get();
-      
+
       if (!currentUserDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -704,15 +823,15 @@ class RoomDetailsPage extends StatelessWidget {
       }
 
       final currentUserData = currentUserDoc.data()!;
-      
+
       // Get poster's data to include their name
       final posterDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(posterId)
           .get();
-      
+
       final posterData = posterDoc.data() ?? {};
-      
+
       // Prepare notification data (without NID)
       final notificationData = {
         'requesterId': currentUser.uid,
@@ -723,7 +842,8 @@ class RoomDetailsPage extends StatelessWidget {
         'posterName': posterData['nidName'] ?? 'Unknown', // Add poster name
         'posterEmail': posterData['email'] ?? 'N/A', // Add poster email
         'posterPhone': posterData['mobileNumber'] ?? 'N/A', // Add poster phone
-        'posterWhatsapp': posterData['whatsappNumber'] ?? 'N/A', // Add poster whatsapp
+        'posterWhatsapp':
+            posterData['whatsappNumber'] ?? 'N/A', // Add poster whatsapp
         'postLocation': postData['location'] ?? 'Unknown',
         'postId': postData['postId'] ?? '',
         'postOwnerId': posterId, // Add post owner ID
@@ -745,15 +865,15 @@ class RoomDetailsPage extends StatelessWidget {
           .doc(currentUser.uid)
           .collection('notifications')
           .add({
-        'posterId': posterId,
-        'postOwnerId': posterId, // Add post owner ID
-        'postLocation': postData['location'] ?? 'Unknown',
-        'postId': postData['postId'] ?? '',
-        'status': 'pending',
-        'type': 'sent_request',
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+            'posterId': posterId,
+            'postOwnerId': posterId, // Add post owner ID
+            'postLocation': postData['location'] ?? 'Unknown',
+            'postId': postData['postId'] ?? '',
+            'status': 'pending',
+            'type': 'sent_request',
+            'isRead': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -775,7 +895,6 @@ class RoomDetailsPage extends StatelessWidget {
       }
     }
   }
-
 }
 
 // Full screen gallery widget
@@ -791,7 +910,8 @@ class _FullScreenGallery extends StatefulWidget {
 class _FullScreenGalleryState extends State<_FullScreenGallery> {
   late PageController _pageController;
   late int _currentIndex;
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
 
   @override
   void initState() {
@@ -845,7 +965,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                     child: CircularProgressIndicator(
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                           : null,
                       color: Colors.white,
                     ),

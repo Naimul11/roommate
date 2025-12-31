@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:roommate/subpages/menubar.dart';
 import 'package:roommate/subpages/roomdetails.dart';
 import 'package:intl/intl.dart';
+import 'package:roommate/utils/bangladesh_locations.dart';
 
 class FindRoomPage extends StatefulWidget {
   const FindRoomPage({super.key});
@@ -16,13 +17,18 @@ class _FindRoomPageState extends State<FindRoomPage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _allPosts = [];
   bool _matchPreferences = false;
-  
+
   // User filter preferences
   String _filterSmoker = 'Any';
   String _filterPetLover = 'Any';
   String _filterCleanliness = 'Any';
   String _filterReligion = 'Any';
   String _filterAgeRange = 'Any';
+
+  // Location filters
+  String? _filterDivision;
+  String? _filterDistrict;
+  List<String> _availableDistricts = [];
 
   @override
   void initState() {
@@ -94,26 +100,42 @@ class _FindRoomPageState extends State<FindRoomPage> {
   }
 
   List<Map<String, dynamic>> _getFilteredPosts() {
-    if (!_matchPreferences) {
-      return _allPosts;
+    List<Map<String, dynamic>> filtered = _allPosts;
+
+    // Apply location filters
+    if (_filterDivision != null && _filterDivision!.isNotEmpty) {
+      filtered = filtered.where((post) {
+        return post['division'] == _filterDivision;
+      }).toList();
     }
 
-    return _allPosts.where((post) {
-      return _matchesPreference(post['smoker'], _filterSmoker) &&
-          _matchesPreference(post['petLover'], _filterPetLover) &&
-          _matchesPreference(post['cleanliness'], _filterCleanliness) &&
-          _matchesPreference(post['preferredReligion'], _filterReligion) &&
-          _matchesPreference(post['ageRange'], _filterAgeRange);
-    }).toList();
+    if (_filterDistrict != null && _filterDistrict!.isNotEmpty) {
+      filtered = filtered.where((post) {
+        return post['district'] == _filterDistrict;
+      }).toList();
+    }
+
+    // Apply preference filters only if enabled
+    if (_matchPreferences) {
+      filtered = filtered.where((post) {
+        return _matchesPreference(post['smoker'], _filterSmoker) &&
+            _matchesPreference(post['petLover'], _filterPetLover) &&
+            _matchesPreference(post['cleanliness'], _filterCleanliness) &&
+            _matchesPreference(post['preferredReligion'], _filterReligion) &&
+            _matchesPreference(post['ageRange'], _filterAgeRange);
+      }).toList();
+    }
+
+    return filtered;
   }
 
   bool _matchesPreference(String? postValue, String filterValue) {
     // If filter is 'Any', it matches everything
     if (filterValue == 'Any') return true;
-    
+
     // If post value is 'Any', it matches everything
     if (postValue == 'Any') return true;
-    
+
     // Otherwise, they must match exactly
     return postValue == filterValue;
   }
@@ -121,7 +143,7 @@ class _FindRoomPageState extends State<FindRoomPage> {
   @override
   Widget build(BuildContext context) {
     final filteredPosts = _getFilteredPosts();
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Find Room'),
@@ -157,9 +179,7 @@ class _FindRoomPageState extends State<FindRoomPage> {
                   bottom: 16,
                   left: 0,
                   right: 0,
-                  child: Center(
-                    child: _buildFilterButton(),
-                  ),
+                  child: Center(child: _buildFilterButton()),
                 ),
               ],
             ),
@@ -189,7 +209,9 @@ class _FindRoomPageState extends State<FindRoomPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _matchPreferences ? Icons.filter_alt : Icons.filter_alt_outlined,
+                  _matchPreferences
+                      ? Icons.filter_alt
+                      : Icons.filter_alt_outlined,
                   color: Colors.white,
                   size: 22,
                 ),
@@ -213,81 +235,214 @@ class _FindRoomPageState extends State<FindRoomPage> {
   void _showFilterMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Filter Options',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Location Filters Section
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Location',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _filterDivision,
+                    decoration: InputDecoration(
+                      labelText: 'Division',
+                      prefixIcon: const Icon(Icons.map),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All Divisions'),
+                      ),
+                      ...BangladeshLocations.divisions.map(
+                        (division) => DropdownMenuItem(
+                          value: division,
+                          child: Text(division),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setModalState(() {
+                        _filterDivision = value;
+                        _filterDistrict = null;
+                        _availableDistricts = value != null
+                            ? BangladeshLocations.getDistricts(value)
+                            : [];
+                      });
+                      setState(() {
+                        _filterDivision = value;
+                        _filterDistrict = null;
+                        _availableDistricts = value != null
+                            ? BangladeshLocations.getDistricts(value)
+                            : [];
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _filterDistrict,
+                    decoration: InputDecoration(
+                      labelText: 'District',
+                      prefixIcon: const Icon(Icons.location_city),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All Districts'),
+                      ),
+                      ..._availableDistricts.map(
+                        (district) => DropdownMenuItem(
+                          value: district,
+                          child: Text(district),
+                        ),
+                      ),
+                    ],
+                    onChanged: _filterDivision == null
+                        ? null
+                        : (value) {
+                            setModalState(() {
+                              _filterDistrict = value;
+                            });
+                            setState(() {
+                              _filterDistrict = value;
+                            });
+                          },
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+
+                  // Preference Filters Section
+                  ListTile(
+                    leading: Icon(
+                      _matchPreferences
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      color: _matchPreferences ? Colors.green : Colors.grey,
+                    ),
+                    title: const Text(
+                      'Match Preferences',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      _matchPreferences
+                          ? 'Showing posts matching your preferences'
+                          : 'Show posts that match your preferences',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _matchPreferences = !_matchPreferences;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(Icons.edit, color: Colors.blue.shade700),
+                    title: const Text(
+                      'Edit Preferences',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      'Adjust your filter preferences',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showEditPreferencesDialog();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Clear Filters Button
+                  if (_filterDivision != null || _filterDistrict != null)
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _filterDivision = null;
+                          _filterDistrict = null;
+                          _availableDistricts = [];
+                        });
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.clear),
+                      label: const Text('Clear Location Filters'),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Filter Options',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: Icon(
-                _matchPreferences ? Icons.check_circle : Icons.circle_outlined,
-                color: _matchPreferences ? Colors.green : Colors.grey,
-              ),
-              title: const Text(
-                'Match Preferences',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(
-                _matchPreferences
-                    ? 'Showing posts matching your preferences'
-                    : 'Show posts that match your preferences',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              onTap: () {
-                setState(() {
-                  _matchPreferences = !_matchPreferences;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.edit, color: Colors.blue.shade700),
-              title: const Text(
-                'Edit Preferences',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(
-                'Adjust your filter preferences',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditPreferencesDialog();
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   void _showEditPreferencesDialog() {
-  String tempSmoker = _filterSmoker;
-  String tempPetLover = _filterPetLover;
-  String tempReligion = _filterReligion;
-  String tempAgeRange = _filterAgeRange;
+    String tempSmoker = _filterSmoker;
+    String tempPetLover = _filterPetLover;
+    String tempReligion = _filterReligion;
+    String tempAgeRange = _filterAgeRange;
 
     showDialog(
       context: context,
@@ -324,7 +479,13 @@ class _FindRoomPageState extends State<FindRoomPage> {
                 _buildPreferenceDropdown(
                   label: 'Religion',
                   value: tempReligion,
-                  items: const ['Any', 'Islam', 'Hindu', 'Christian', 'Buddhist'],
+                  items: const [
+                    'Any',
+                    'Islam',
+                    'Hindu',
+                    'Christian',
+                    'Buddhist',
+                  ],
                   onChanged: (value) {
                     setDialogState(() {
                       tempReligion = value!;
@@ -384,16 +545,14 @@ class _FindRoomPageState extends State<FindRoomPage> {
       value: value,
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       items: items.map((item) {
-        return DropdownMenuItem(
-          value: item,
-          child: Text(item),
-        );
+        return DropdownMenuItem(value: item, child: Text(item));
       }).toList(),
       onChanged: onChanged,
     );
@@ -432,11 +591,27 @@ class _FindRoomPageState extends State<FindRoomPage> {
 
   Widget _buildPostCard(Map<String, dynamic> data) {
     final location = data['location'] ?? 'Unknown location';
+    final division = data['division'] ?? '';
+    final district = data['district'] ?? '';
+    final address = data['address'] ?? '';
     final roomType = data['roomType'] ?? 'N/A';
     final floor = data['floor'] ?? 'N/A';
     final totalCost = data['totalCost']?.toDouble() ?? 0.0;
     final mainRoomImageUrl = data['mainRoomImageUrl'] as String?;
     final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+
+    // Build location display
+    String locationDisplay = '';
+    if (division.isNotEmpty && district.isNotEmpty) {
+      locationDisplay = '$district, $division';
+      if (address.isNotEmpty) {
+        locationDisplay = '$address, $locationDisplay';
+      }
+    } else if (location.isNotEmpty) {
+      locationDisplay = location;
+    } else {
+      locationDisplay = 'Unknown location';
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -524,7 +699,7 @@ class _FindRoomPageState extends State<FindRoomPage> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          location,
+                          locationDisplay,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

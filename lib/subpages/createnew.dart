@@ -3,11 +3,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:roommate/services/imagekit_service.dart';
+import 'package:roommate/utils/bangladesh_locations.dart';
 import 'dart:io';
 
 class CreateNewPostPage extends StatefulWidget {
   final String? postId; // For editing existing posts
-  
+
   const CreateNewPostPage({super.key, this.postId});
 
   @override
@@ -21,24 +22,26 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
     final match = dateRegExp.firstMatch(postDocId);
     return match != null ? match.group(1)! : postDocId;
   }
+
   final _formKey = GlobalKey<FormState>();
-  
+
   // Image files
   File? _mainRoomImage;
   File? _mainSpotImage;
   File? _differentAngleImage;
-  
+
   bool _isUploading = false;
-  
+
   // Text controllers
-  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
   final TextEditingController _floorController = TextEditingController();
   final TextEditingController _facilitiesController = TextEditingController();
   final TextEditingController _rentController = TextEditingController();
   final TextEditingController _foodController = TextEditingController();
   final TextEditingController _utilitiesController = TextEditingController();
-  final TextEditingController _numberOfRoommatesController = TextEditingController();
-  
+  final TextEditingController _numberOfRoommatesController =
+      TextEditingController();
+
   // Dropdown values
   String? _roomType;
   String? _gender;
@@ -47,10 +50,15 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
   String? _petLover = 'Any';
   String? _cleanliness = 'Any';
   String? _ageRange = 'Any';
-  
+
+  // Location dropdowns
+  String? _selectedDivision;
+  String? _selectedDistrict;
+  List<String> _availableDistricts = [];
+
   bool _isEditMode = false;
   bool _isLoadingData = false;
-  
+
   // Calculated total
   double get _totalCost {
     final rent = double.tryParse(_rentController.text) ?? 0;
@@ -94,13 +102,21 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
       final data = doc.data()!;
       setState(() {
-        _locationController.text = data['location'] ?? '';
+        _selectedDivision = data['division'];
+        _selectedDistrict = data['district'];
+        _addressController.text = data['address'] ?? '';
+        if (_selectedDivision != null) {
+          _availableDistricts = BangladeshLocations.getDistricts(
+            _selectedDivision!,
+          );
+        }
         _floorController.text = data['floor']?.toString() ?? '';
         _facilitiesController.text = data['facilities'] ?? '';
         _rentController.text = data['rent']?.toString() ?? '';
         _foodController.text = data['food']?.toString() ?? '';
         _utilitiesController.text = data['utilities']?.toString() ?? '';
-        _numberOfRoommatesController.text = data['numberOfRoommates']?.toString() ?? '';
+        _numberOfRoommatesController.text =
+            data['numberOfRoommates']?.toString() ?? '';
         _roomType = data['roomType'];
         _gender = data['gender'];
         _preferredReligion = data['preferredReligion'];
@@ -120,7 +136,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
   @override
   void dispose() {
-    _locationController.dispose();
+    _addressController.dispose();
     _floorController.dispose();
     _facilitiesController.dispose();
     _rentController.dispose();
@@ -142,11 +158,11 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
       if (image != null) {
         final File imageFile = File(image.path);
-        
+
         // Check file size (max 5MB for room images)
         final fileSize = await imageFile.length();
         const maxSize = 5 * 1024 * 1024; // 5MB
-        
+
         if (fileSize > maxSize) {
           if (mounted) {
             _showSnackBar(
@@ -204,7 +220,9 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
     // For edit mode, images are optional (can keep existing images)
     // For create mode, all images are required
     if (!_isEditMode) {
-      if (_mainRoomImage == null || _mainSpotImage == null || _differentAngleImage == null) {
+      if (_mainRoomImage == null ||
+          _mainSpotImage == null ||
+          _differentAngleImage == null) {
         _showSnackBar('Please upload all three images.', isError: true);
         return;
       }
@@ -213,7 +231,10 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
     // Validate number of roommates if shared
     if (_roomType == 'Shared') {
       if (_numberOfRoommatesController.text.isEmpty) {
-        _showSnackBar('Please enter number of roommates for shared room.', isError: true);
+        _showSnackBar(
+          'Please enter number of roommates for shared room.',
+          isError: true,
+        );
         return;
       }
     }
@@ -234,13 +255,16 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
       final uid = user.uid;
       final now = DateTime.now();
-      final todayDate = "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final todayDate =
+          "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
       final postDocId = _isEditMode ? widget.postId! : todayDate;
 
       // Prepare base post data
       final Map<String, dynamic> postData = {
         'userId': uid,
-        'location': _locationController.text.trim(),
+        'division': _selectedDivision ?? '',
+        'district': _selectedDistrict ?? '',
+        'address': _addressController.text.trim(),
         'floor': _floorController.text.trim(),
         'facilities': _facilitiesController.text.trim(),
         'rent': double.tryParse(_rentController.text) ?? 0,
@@ -248,8 +272,8 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         'utilities': double.tryParse(_utilitiesController.text) ?? 0,
         'totalCost': _totalCost,
         'roomType': _roomType,
-        'numberOfRoommates': _roomType == 'Shared' 
-            ? int.tryParse(_numberOfRoommatesController.text) ?? 0 
+        'numberOfRoommates': _roomType == 'Shared'
+            ? int.tryParse(_numberOfRoommatesController.text) ?? 0
             : null,
         'gender': _gender,
         'preferredReligion': _preferredReligion,
@@ -261,13 +285,16 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
       };
 
       // Upload images if new images are selected
-      if (_mainRoomImage != null || _mainSpotImage != null || _differentAngleImage != null) {
+      if (_mainRoomImage != null ||
+          _mainSpotImage != null ||
+          _differentAngleImage != null) {
         _showSnackBar('Uploading images...', duration: 30);
 
         if (_mainRoomImage != null) {
           final mainRoomUrl = await ImageKitService.uploadImage(
             imageFile: _mainRoomImage!,
-            fileName: 'roommate_post_main_${uid}_${_getDateString(postDocId)}.jpg',
+            fileName:
+                'roommate_post_main_${uid}_${_getDateString(postDocId)}.jpg',
             folder: 'roommate/posts/$uid',
           );
           if (mainRoomUrl != null) {
@@ -278,7 +305,8 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         if (_mainSpotImage != null) {
           final mainSpotUrl = await ImageKitService.uploadImage(
             imageFile: _mainSpotImage!,
-            fileName: 'roommate_post_spot_${uid}_${_getDateString(postDocId)}.jpg',
+            fileName:
+                'roommate_post_spot_${uid}_${_getDateString(postDocId)}.jpg',
             folder: 'roommate/posts/$uid',
           );
           if (mainSpotUrl != null) {
@@ -289,7 +317,8 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         if (_differentAngleImage != null) {
           final differentAngleUrl = await ImageKitService.uploadImage(
             imageFile: _differentAngleImage!,
-            fileName: 'roommate_post_different_${uid}_${_getDateString(postDocId)}.jpg',
+            fileName:
+                'roommate_post_different_${uid}_${_getDateString(postDocId)}.jpg',
             folder: 'roommate/posts/$uid',
           );
           if (differentAngleUrl != null) {
@@ -309,10 +338,14 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          _showSnackBar('Post updated successfully!', isSuccess: true, duration: 2);
-          
+          _showSnackBar(
+            'Post updated successfully!',
+            isSuccess: true,
+            duration: 2,
+          );
+
           await Future.delayed(const Duration(seconds: 2));
-          
+
           if (mounted) {
             Navigator.of(context).pop(true); // Return true to indicate success
           }
@@ -330,10 +363,14 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          _showSnackBar('Post created successfully!', isSuccess: true, duration: 2);
-          
+          _showSnackBar(
+            'Post created successfully!',
+            isSuccess: true,
+            duration: 2,
+          );
+
           await Future.delayed(const Duration(seconds: 2));
-          
+
           if (mounted) {
             Navigator.of(context).pop(true); // Return true to indicate success
           }
@@ -341,7 +378,10 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Error ${_isEditMode ? 'updating' : 'creating'} post: $e', isError: true);
+        _showSnackBar(
+          'Error ${_isEditMode ? 'updating' : 'creating'} post: $e',
+          isError: true,
+        );
       }
     } finally {
       if (mounted) {
@@ -361,17 +401,19 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
     final color = isError
         ? Colors.red
         : isSuccess
-            ? Colors.green
-            : Colors.blue;
+        ? Colors.green
+        : Colors.blue;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(
-              isError ? Icons.error_outline_rounded : 
-              isSuccess ? Icons.check_circle_rounded : 
-              Icons.info_outline_rounded,
+              isError
+                  ? Icons.error_outline_rounded
+                  : isSuccess
+                  ? Icons.check_circle_rounded
+                  : Icons.info_outline_rounded,
               color: Colors.white,
             ),
             const SizedBox(width: 12),
@@ -381,9 +423,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: duration),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -397,12 +437,10 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
           backgroundColor: Colors.blue.shade700,
           foregroundColor: Colors.white,
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Post' : 'Create New Post'),
@@ -460,13 +498,19 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary.withAlpha(26), // 0.1 * 255 = 25.5
-            Theme.of(context).colorScheme.primary.withAlpha(13), // 0.05 * 255 = 12.75
+            Theme.of(
+              context,
+            ).colorScheme.primary.withAlpha(26), // 0.1 * 255 = 25.5
+            Theme.of(
+              context,
+            ).colorScheme.primary.withAlpha(13), // 0.05 * 255 = 12.75
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withAlpha(51), // 0.2 * 255 = 51
+          color: Theme.of(
+            context,
+          ).colorScheme.primary.withAlpha(51), // 0.2 * 255 = 51
         ),
       ),
       child: Row(
@@ -501,7 +545,9 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
                   'Share your room details with potential roommates',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface.withAlpha(153), // 0.6 * 255 = 153
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha(153), // 0.6 * 255 = 153
                   ),
                 ),
               ],
@@ -559,13 +605,76 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
       icon: Icons.location_city_rounded,
       children: [
         const SizedBox(height: 20),
-        _buildModernTextField(
-          controller: _locationController,
-          label: 'Full Address',
-          icon: Icons.place_rounded,
+        DropdownButtonFormField<String>(
+          value: _selectedDivision,
+          decoration: InputDecoration(
+            labelText: 'Division',
+            prefixIcon: const Icon(Icons.map_rounded),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          items: BangladeshLocations.divisions
+              .map(
+                (division) =>
+                    DropdownMenuItem(value: division, child: Text(division)),
+              )
+              .toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedDivision = value;
+              _selectedDistrict = null;
+              _availableDistricts = value != null
+                  ? BangladeshLocations.getDistricts(value)
+                  : [];
+            });
+          },
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter location address';
+              return 'Please select a division';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _selectedDistrict,
+          decoration: InputDecoration(
+            labelText: 'District',
+            prefixIcon: const Icon(Icons.location_city_rounded),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          items: _availableDistricts
+              .map(
+                (district) =>
+                    DropdownMenuItem(value: district, child: Text(district)),
+              )
+              .toList(),
+          onChanged: _selectedDivision == null
+              ? null
+              : (value) {
+                  setState(() {
+                    _selectedDistrict = value;
+                  });
+                },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select a district';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildModernTextField(
+          controller: _addressController,
+          label: 'Address (Area, Road, House)',
+          icon: Icons.home_outlined,
+          hintText: 'e.g., Banani, Road 11, House 25',
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter address';
             }
             return null;
           },
@@ -730,10 +839,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
                     const SizedBox(height: 4),
                     Text(
                       'All costs included',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.green[600]),
                     ),
                   ],
                 ),
@@ -915,9 +1021,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
       onPressed: _isUploading ? null : _createPost,
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       child: _isUploading
@@ -1037,7 +1141,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: imageFile != null 
+            color: imageFile != null
                 ? Colors.green.withAlpha(77)
                 : Theme.of(context).colorScheme.outline.withAlpha(51),
             width: 2,
@@ -1102,7 +1206,10 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
                     bottom: 12,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(20),
@@ -1116,8 +1223,9 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.check_circle_rounded, 
-                            color: Colors.white, 
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Colors.white,
                             size: 14,
                           ),
                           const SizedBox(width: 4),
@@ -1142,7 +1250,9 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withAlpha(26),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha(26),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1165,7 +1275,9 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(153),
                       ),
                     ),
                   ],

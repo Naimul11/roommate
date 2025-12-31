@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:roommate/subpages/menubar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:roommate/utils/bangladesh_locations.dart';
 
 class CreateRoomPage extends StatefulWidget {
   const CreateRoomPage({super.key});
@@ -13,9 +14,13 @@ class CreateRoomPage extends StatefulWidget {
 class _CreateRoomPageState extends State<CreateRoomPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _roomNameController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
   final TextEditingController _yourNameController = TextEditingController();
   final TextEditingController _yourGmailController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+
+  String? _selectedDivision;
+  String? _selectedDistrict;
+  List<String> _availableDistricts = [];
 
   // Bill fields
   final TextEditingController _totalRentController = TextEditingController();
@@ -246,7 +251,9 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
       // Create room document
       final roomData = {
         'roomName': _roomNameController.text.trim(),
-        'location': _locationController.text.trim(),
+        'division': _selectedDivision ?? '',
+        'district': _selectedDistrict ?? '',
+        'address': _addressController.text.trim(),
         'creatorId': user.uid,
         'creatorName': _yourNameController.text.trim(),
         'creatorEmail': _yourGmailController.text.trim(),
@@ -307,7 +314,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
   @override
   void dispose() {
     _roomNameController.dispose();
-    _locationController.dispose();
+    _addressController.dispose();
     _yourNameController.dispose();
     _yourGmailController.dispose();
     _totalRentController.dispose();
@@ -359,13 +366,83 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _locationController,
-                    label: 'Location',
-                    icon: Icons.location_on,
+                  DropdownButtonFormField<String>(
+                    value: _selectedDivision,
+                    decoration: InputDecoration(
+                      labelText: 'Division',
+                      prefixIcon: const Icon(Icons.map),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                    items: BangladeshLocations.divisions
+                        .map(
+                          (division) => DropdownMenuItem(
+                            value: division,
+                            child: Text(division),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedDivision = value;
+                        _selectedDistrict = null;
+                        _availableDistricts = value != null
+                            ? BangladeshLocations.getDistricts(value)
+                            : [];
+                      });
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter location';
+                        return 'Please select a division';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _selectedDistrict,
+                    decoration: InputDecoration(
+                      labelText: 'District',
+                      prefixIcon: const Icon(Icons.location_city),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                    items: _availableDistricts
+                        .map(
+                          (district) => DropdownMenuItem(
+                            value: district,
+                            child: Text(district),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _selectedDivision == null
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _selectedDistrict = value;
+                            });
+                          },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a district';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _addressController,
+                    label: 'Address (Area, Road, House)',
+                    icon: Icons.home_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter address';
                       }
                       return null;
                     },
